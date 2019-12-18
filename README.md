@@ -19,8 +19,9 @@
 
 ## RABBITMQ
 - Source: 
-  + based on: [3.8 Ubuntu](https://github.com/docker-library/rabbitmq/blob/853ba639f40baeb1f6ae021730fe8b71386b0999/3.8/ubuntu/Dockerfile)  
-
+  + based on: [3.8 Ubuntu](https://github.com/docker-library/rabbitmq/blob/853ba639f40baeb1f6ae021730fe8b71386b0999/3.8/ubuntu/Dockerfile)
+  + final image: [custom img](https://hub.docker.com/r/flipperthedog/rabbitmq)
+  
 - Adaptation done:
   + add the following packages to the Dockerfile (via `apt-get`):
     - net-tools
