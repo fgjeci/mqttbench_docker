@@ -3,7 +3,7 @@
 ## VerneMQ
 - Source: 
   + based on: 
-    - [3.2 Debian](https://github.com/vernemq/docker-vernemq/blob/master/Dockerfile)
+    - [Debian](https://github.com/vernemq/docker-vernemq/blob/master/Dockerfile)
   + final image: [custom img]()
 
 - Adaptation done:
