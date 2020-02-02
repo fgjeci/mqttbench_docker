@@ -28,8 +28,8 @@
     - iputils
     - iproute2
     - net-tools
-    - iperf \
-    - xterm \
+    - iperf
+    - xterm
     - busybox-extras
   + change the user to **root**: `USER root`
   #### In the Alpine distribution, parameters should be changed by means of command line commands
