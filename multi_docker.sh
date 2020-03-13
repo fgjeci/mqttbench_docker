@@ -1,0 +1,162 @@
+#!/bin/bash
+
+NETWORK_NAME="pumba_net"
+IP_ADDR="172.20.0."
+CLUSTER_TYPE="vernemq"
+DEFAULT_INTERFACE="eth0"
+TOTAL_BROKERS=5
+DELAY=50
+DURATION_SIM="15m"
+PWD=$(pwd)
+FIST_BROKER_NUM=2
+LAST_BROKER_NUM=$((TOTAL_BROKERS+1))
+
+
+###### EMQX HELPER FUNCTIONS ######
+function COMPOSE_STATIC_CLUSTER {
+  STRING=""
+
+  for i in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
+    do
+      case $CLUSTER_TYPE in
+          EMQX | emqx)
+            STRING="${STRING}${CLUSTER_TYPE}${i}@${IP_ADDR}${i},"
+            ;;
+
+          VERNEMQ | vernemq | VERNE | verne )
+            STRING="${STRING}${IP_ADDR}${i},"
+          ;;
+          *)
+            echo -n "$BROKER not available"
+            ;;
+      esac
+    done
+  echo "$STRING"
+}
+###### END OF EMQX HELPER ######
+
+###### EMQX HELPER FUNCTIONS ######
+function CREATE_CONFIG {
+  current_bkr=$1
+  for i in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
+    do
+      echo "cluster_formation.classic_config.nodes.$((i-1)) = docker@${CLUSTER_TYPE}_${i}" >>  "$PWD"/confiles/"$current_bkr".conf
+    done
+}
+
+function ADD_HOSTS {
+  current_bkr=$1
+  for i in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
+    do
+      docker exec -it "$current_bkr" sh -c "echo '172.20.0.$i      ${CLUSTER_TYPE}_${i}' >> /etc/hosts"
+    done
+}
+###### END OF RABBITMQ HELPER ######
+
+###### EMQX ######
+function RUN_EMQX {
+  for bkr in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
+    do
+      BRK_NAME=$CLUSTER_TYPE"$bkr"
+      docker run -d --network=$NETWORK_NAME \
+        --hostname "$BRK_NAME" \
+        --name "$BRK_NAME" \
+        -p $((1880+bkr)):1883 \
+        -e EMQX_NAME="$BRK_NAME" \
+        -e EMQX_NODE__DIST_LISTEN_MAX=6379 \
+        -e EMQX_LISTENER__TCP__EXTERNAL=1883 \
+        -e EMQX_CLUSTER__DISCOVERY="static" \
+        -e EMQX_CLUSTER__STATIC__SEEDS="$(COMPOSE_STATIC_CLUSTER)" \
+        flipperthedog/emqx-pumba
+    done
+}
+###### END OF EMQX ######
+
+###### RABBITMQ ######
+function RUN_RABBITMQ {
+  for bkr in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
+    do
+      BRK_NAME="${CLUSTER_TYPE}_${bkr}"
+      cp "$PWD"/confiles/rabbitmq.conf "$PWD"/confiles/"$BRK_NAME".conf
+      CREATE_CONFIG "$BRK_NAME"
+
+      docker run -d --network=$NETWORK_NAME \
+        --hostname "$BRK_NAME" \
+        --name "$BRK_NAME" \
+        -p $((5670+bkr)):5672 \
+        -v "$PWD"/confiles/"$BRK_NAME".conf:/etc/rabbitmq/rabbitmq.conf \
+        -e RABBITMQ_ERLANG_COOKIE=$(cat "$PWD"/.erlang.cookie) \
+        -e RABBITMQ_NODENAME=docker@"$BRK_NAME" \
+        flipperthedog/rabbitmq:ping
+
+      ADD_HOSTS "$BRK_NAME"
+ 	  done
+}
+###### END OF RABBITMQ ######
+
+###### VERNEMQ ######
+function RUN_VERNEMQ {
+  for bkr in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
+    do
+      BRK_NAME="${CLUSTER_TYPE}_${bkr}"
+
+      docker run -d --network=$NETWORK_NAME \
+        --hostname "$BRK_NAME" \
+        --name "$BRK_NAME" \
+        -p $((5680+bkr)):5684 \
+        -e DOCKER_VERNEMQ_ACCEPT_EULA=yes \
+		    -e DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on \
+        -e DOCKER_VERNEMQ_NODENAME="${IP_ADDR}${bkr}" \
+        -e DOCKER_VERNEMQ_DISCOVERY_NODE=127.20.0.4 \
+        flipperthedog/vernemq:latest
+ 	  done
+}
+###### END OF VERNEMQ ######
+
+###### MAIN ######
+echo "Cleaning up the environment..."
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+
+docker network rm $NETWORK_NAME
+
+echo "Creating a new network..."
+docker network create \
+		--driver=bridge \
+		--subnet="$IP_ADDR"0/16 \
+		--ip-range="$IP_ADDR"0/24 \
+		$NETWORK_NAME
+
+
+echo "Creating brokers of type... $CLUSTER_TYPE"
+
+case $CLUSTER_TYPE in
+
+  EMQX | emqx)
+    RUN_EMQX
+    ;;
+
+  RABBITMQ | rabbitmq | RABBIT | rabbit)
+    RUN_RABBITMQ
+    ;;
+
+  VERNEMQ | vernemq | VERNE | verne )
+    RUN_VERNEMQ
+  ;;
+  *)
+    echo -n "$BROKER not available"
+    ;;
+esac
+
+
+
+#echo "Slowing down the network..."
+#sleep 20
+#
+#docker run -d --rm --network=pumba_net \
+# 		--name pumba \
+#		-v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
+#		--interface $DEFAULT_INTERFACE \
+#		--duration $DURATION_SIM \
+#		delay --time $DELAY \
+#		$(docker ps --format "{{.Names}}"  | tr '\r\n' ' ')
