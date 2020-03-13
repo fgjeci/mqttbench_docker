@@ -7,7 +7,7 @@ RUN apt-get update && \
     addgroup --gid 10000 vernemq && \
     adduser --uid 10000 --system --ingroup vernemq --home /vernemq --disabled-password vernemq
 
-# add containernet packages -> Here we insert the containernet packages to make containernet use the network tools
+# Network packages
 RUN apt-get update && apt-get install -y \
     net-tools \
     iputils-ping \
@@ -20,6 +20,10 @@ ENV DOCKER_VERNEMQ_KUBERNETES_LABEL_SELECTOR="app=vernemq" \
     DOCKER_VERNEMQ_LOG__CONSOLE=console \
     PATH="/vernemq/bin:$PATH" \
     VERNEMQ_VERSION="1.10.1"
+   
+# Added locally to accept licences and allow anonymous connection
+ENV DOCKER_VERNEMQ_ACCEPT_EULA=yes \
+    DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on
 
 COPY --chown=10000:10000 bin/vernemq.sh /usr/sbin/start_vernemq
 COPY --chown=10000:10000 files/vm.args /vernemq/etc/vm.args
@@ -52,4 +56,9 @@ HEALTHCHECK CMD vernemq ping | grep -q pong
 # changed from vernemq -> root
 USER root
 
-CMD ["start_vernemq"]
+# Added -> Give execution permissions to start_vernemq script
+RUN chmod +x /usr/sbin/start_vernemq.sh
+
+# CMD ["start_vernemq"]
+# running the start_vernemq script
+CMD ["/usr/sbin/start_vernemq.sh"]
