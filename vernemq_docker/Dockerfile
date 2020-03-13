@@ -1,4 +1,3 @@
-
 FROM debian:stretch-slim
 
 RUN apt-get update && \
@@ -7,7 +6,7 @@ RUN apt-get update && \
     addgroup --gid 10000 vernemq && \
     adduser --uid 10000 --system --ingroup vernemq --home /vernemq --disabled-password vernemq
 
-# Network packages
+# Added -> Network packages
 RUN apt-get update && apt-get install -y \
     net-tools \
     iputils-ping \
@@ -21,7 +20,7 @@ ENV DOCKER_VERNEMQ_KUBERNETES_LABEL_SELECTOR="app=vernemq" \
     PATH="/vernemq/bin:$PATH" \
     VERNEMQ_VERSION="1.10.1"
    
-# Added locally to accept licences and allow anonymous connection
+# Added -> locally to accept licences and allow anonymous connection
 ENV DOCKER_VERNEMQ_ACCEPT_EULA=yes \
     DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on
 
