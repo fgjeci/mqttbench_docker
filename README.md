@@ -33,7 +33,7 @@
 - Source: 
   + based on: 
     - [Debian](https://github.com/vernemq/docker-vernemq/blob/master/Dockerfile)
-  + final image: [custom img]()
+  + final image: [custom img](https://hub.docker.com/r/francigjeci/vernemq-debian)
 
 - Adaptation done:
   + add the following packages to the Dockerfile (via `apk add`):
@@ -46,6 +46,11 @@
     - `"DOCKER_VERNEMQ_ACCEPT_EULA": "yes"` -  env parameter
   + Allow anonymous communication: 
     - `"DOCKER_VERNEMQ_ALLOW_ANONYMOUS":"on"`
+  #### Alternitavely, these enviroment parameters can be preconfigured in the docker file 
+  + Accept the license terms: 
+    - `ENV DOCKER_VERNEMQ_ACCEPT_EULA=yes`
+  + Allow anonymous communication: 
+    - `DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on`
   
 - Source: 
   + based on: 
