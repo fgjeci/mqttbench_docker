@@ -1,5 +1,4 @@
 # Requirements
 
 ## HiveMQ
-- XMLStarlet: 
-  + (http://http://xmlstar.sourceforge.net/)
+- XMLStarlet (http://http://xmlstar.sourceforge.net/)
