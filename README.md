@@ -55,7 +55,7 @@
 - Source: 
   + based on: 
     - [3.9 Alpine](https://github.com/vernemq/docker-vernemq/blob/master/Dockerfile.alpine)
-  + final image: [custom img]()
+  + final image: [custom img](https://hub.docker.com/repository/docker/francigjeci/vernemq-alpine)
 
 - Adaptation done:
   + add the following packages to the Dockerfile (via `apk add`):
