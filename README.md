@@ -82,15 +82,9 @@
 
 ## HiveMQ
 - Source: 
-<<<<<<< HEAD
   + based on: [4.2 HiveMQ](https://github.com/hivemq/hivemq4-docker-images/tree/master/hivemq4/dns-image/Dockerfile)  
-  + final image: [custom img]()
+  + final image: [custom img](https://hub.docker.com/repository/docker/francigjeci/hivemq)
 
-=======
-  + based on: [3.8 Ubuntu](https://github.com/docker-library/rabbitmq/blob/853ba639f40baeb1f6ae021730fe8b71386b0999/3.8/ubuntu/Dockerfile)
-  + final image: [custom img](https://hub.docker.com/r/flipperthedog/rabbitmq)
-  
->>>>>>> 25dd2660bfb91c60433bab44e107add6f1a0ed1d
 - Adaptation done:
   + add the following packages to the Dockerfile (via `apt-get`):
     - net-tools
