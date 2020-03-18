@@ -1,0 +1,32 @@
+docker run --rm -ti --network=pumba_vernemq piersfinlayson/mosquitto-clients mosquitto_pub -h 172.20.0.3 -p 1883 -t test -m $(date +"%Y-%m-%d_%T.%3N") -d | xargs -d$'\n' -L1 bash -c 'date "+%Y-%m-%d %T.%3N ---- $0"'
+
+
+2020-03-12 21:07:50.479 ---- Client mosqpub/1-f547fdb910ea sending CONNECT
+2020-03-12 21:07:50.550 ---- Client mosqpub/1-f547fdb910ea received CONNACK
+2020-03-12 21:07:50.556 ---- Client mosqpub/1-f547fdb910ea sending PUBLISH (d0, q0, r0, m1, 'test', ... (23 bytes))
+2020-03-12 21:07:50.561 ---- Client mosqpub/1-f547fdb910ea sending DISCONNECT
+
+2020-03-12 21:07:55.210 ---- Client mosqpub/1-54d28c6e19da sending CONNECT
+2020-03-12 21:07:55.254 ---- Client mosqpub/1-54d28c6e19da received CONNACK
+2020-03-12 21:07:55.257 ---- Client mosqpub/1-54d28c6e19da sending PUBLISH (d0, q0, r0, m1, 'test', ... (23 bytes))
+2020-03-12 21:07:55.262 ---- Client mosqpub/1-54d28c6e19da sending DISCONNECT
+
+2020-03-12 21:07:58.325 ---- Client mosqpub/1-ef51be0eb189 sending CONNECT
+2020-03-12 21:07:58.702 ---- Client mosqpub/1-ef51be0eb189 received CONNACK
+2020-03-12 21:07:58.705 ---- Client mosqpub/1-ef51be0eb189 sending PUBLISH (d0, q0, r0, m1, 'test', ... (23 bytes))
+2020-03-12 21:07:58.709 ---- Client mosqpub/1-ef51be0eb189 sending DISCONNECT
+
+2020-03-12 21:08:01.378 ---- Client mosqpub/1-6cfee32dc1a3 sending CONNECT
+2020-03-12 21:08:01.426 ---- Client mosqpub/1-6cfee32dc1a3 received CONNACK
+2020-03-12 21:08:01.429 ---- Client mosqpub/1-6cfee32dc1a3 sending PUBLISH (d0, q0, r0, m1, 'test', ... (23 bytes))
+2020-03-12 21:08:01.432 ---- Client mosqpub/1-6cfee32dc1a3 sending DISCONNECT
+
+2020-03-12 21:08:03.623 ---- Client mosqpub/1-3a464e7d77ab sending CONNECT
+2020-03-12 21:08:03.682 ---- Client mosqpub/1-3a464e7d77ab received CONNACK
+2020-03-12 21:08:03.686 ---- Client mosqpub/1-3a464e7d77ab sending PUBLISH (d0, q0, r0, m1, 'test', ... (23 bytes))
+2020-03-12 21:08:03.689 ---- Client mosqpub/1-3a464e7d77ab sending DISCONNECT
+
+2020-03-12 21:08:06.709 ---- Client mosqpub/1-515cd4b08a7c sending CONNECT
+2020-03-12 21:08:06.764 ---- Client mosqpub/1-515cd4b08a7c received CONNACK
+2020-03-12 21:08:06.767 ---- Client mosqpub/1-515cd4b08a7c sending PUBLISH (d0, q0, r0, m1, 'test', ... (23 bytes))
+2020-03-12 21:08:06.771 ---- Client mosqpub/1-515cd4b08a7c sending DISCONNECT

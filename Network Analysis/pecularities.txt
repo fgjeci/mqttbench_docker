@@ -1,0 +1,85 @@
+VERNEMQ
+
+This files includes the pecularites of the communication
+
+- The docker nodes d1 and d2 have the following ip addresses:
+	d1 -> 172.20.0.2
+	d2 -> 172.20.0.3
+
+- The docker uses ARP protocol to resolve it MAC address with its IP address.
+	The docker exchange these ARP packets to claim themselves in the network by broadcasting their presence
+	d1 -> MAC address: 02:42:ac:14:00:02 IP address: 172.20.0.2
+	d2 -> MAC address: 02:42:ac:14:00:03 IP address: 172.20.0.3
+
+- *The docker claim their presence to 2 other IPS
+	d1 -> 172.20.0.2 | 172.20.0.5 -> the subscriber
+	d2 -> 172.20.0.3 | 172.20.0.6 -> the publisher
+	Only 172.20.0.5 is accessible through pinging
+	To be understood why this happen
+- The subscriber (172.20.0.5) is subscribed to d1 -> 172.20.0.2
+- The publisher (172.20.0.6) publishes at d2 -> 172.20.0.3
+- EPMD - protocol used by the brokers to ask for ports used
+- ErlDP - protocol used to send the broker's name ; SEND_CHALLENGE
+
+- 172.20.0.5 After using ARP (broadcast) to 172.20.0.2, it send the MQTT Connect Command(221) 
+- 172.20.0.2 -> 172.20.0.5 MQTT Connect ACK (255)
+- 172.20.0.5 -> 172.20.0.2 MQTT Subscribe request (255)
+- 172.20.0.2 -> 172.20.0.5 MQTT Subscribe ACK (263)
+
+************ 1st message ************
+
+* MQTT connect and Connect ACK are heavy (len 38->conn and 4->conn ack)
+ even publish -> len = 31
+
+Publishing messages
+- 02:42:ac:14:00:06 - 172.20.0.6 ARP broadcast for target 172.20.0.3
+- 172.20.0.6 -> 172.20.0.3 MQTT Connect -> 21:07:50.474656420 CET
+	5 ms difference from docker data
+- 172.20.0.6 -> 172.20.0.3 MQTT Connect -> 21:07:50.545867707
+	5 ms difference from docker data
+- 172.20.0.6 -> 172.20.0.3 MQTT Disconnect -> 21:07:50.546168707
+
+
+Message exchange strategy (starting 353)
+353 ErlDP(REG_SEND)- 172.20.0.3 -> 172.20.0.2 -> 21:07:50.548795557
+354 TCP - 172.20.0.3 -> 172.20.0.2 -> 21:07:50.592581439
+	iRTT : 0.102359315
+356 ErlDP(REG_SEND)- 172.20.0.3 -> 172.20.0.2 -> 21:07:50.604539010 
+
+Relaying to the subscriber
+361 MQTT Publish Message - 172.20.0.2 -> 172.20.0.5 -> 21:07:50.659249490
+	10 ms diff
+
+366 - 376 -> should be messages exchanged regarding the change of state
+
+*********** 2nd message **********8
+
+Publishing messages
+- 02:42:ac:14:00:06 - 172.20.0.6 ARP broadcast for target 172.20.0.3
+- 172.20.0.6 -> 172.20.0.3 MQTT Connect -> 21:07:50.474656420 CET
+	5 ms difference from docker data
+- 172.20.0.6 -> 172.20.0.3 MQTT Connect -> 21:07:50.545867707
+	5 ms difference from docker data
+- 172.20.0.6 -> 172.20.0.3 MQTT Disconnect -> 21:07:50.546168707
+
+
+Message exchange strategy (starting 353)
+353 ErlDP(REG_SEND)- 172.20.0.3 -> 172.20.0.2 -> 21:07:50.548795557
+354 TCP - 172.20.0.3 -> 172.20.0.2 -> 21:07:50.592581439
+	iRTT : 0.102359315
+356 ErlDP(REG_SEND)- 172.20.0.3 -> 172.20.0.2 -> 21:07:50.604539010 
+
+Relaying to the subscriber
+361 MQTT Publish Message - 172.20.0.2 -> 172.20.0.5 -> 21:07:50.659249490
+	10 ms diff
+
+366 - 376 -> should be messages exchanged regarding the change of state
+
+
+	
+
+
+
+
+
+	
