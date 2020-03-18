@@ -1,0 +1,6 @@
+For every message published, does the receiver ask to other brokers whether they have subscribers in that specific topic, or does it contain a memory storing that info?
+
+What happens when there are more than 2 dockers?
+How is routing implemented (broadcast/tree struct)
+
+When a broker receives a publish regarding a specific topic, which it knows there are several clients subscribed to that topic, does it send unicast or broadcast messages?
