@@ -1,0 +1,36 @@
+docker run --rm -ti --network=pumba_vernemq piersfinlayson/mosquitto-clients mosquitto_sub -h 172.20.0.2 -p 1883 -t test  -d | xargs -d$'\n' -L1 bash -c 'date "+%Y-%m-%d %T.%3N ---- $0"'
+
+
+2020-03-12 21:07:36.961 ---- Client mosqsub/1-fd9768eae33b sending CONNECT
+2020-03-12 21:07:37.388 ---- Client mosqsub/1-fd9768eae33b received CONNACK
+2020-03-12 21:07:37.393 ---- Client mosqsub/1-fd9768eae33b sending SUBSCRIBE (Mid: 1, Topic: test, QoS: 0)
+2020-03-12 21:07:37.438 ---- Client mosqsub/1-fd9768eae33b received SUBACK
+2020-03-12 21:07:37.443 ---- Subscribed (mid: 1): 0
+2020-03-12 21:07:50.664 ---- Client mosqsub/1-fd9768eae33b received PUBLISH (d0, q0, r0, m0, 'test', ... (23 bytes))
+2020-03-12 21:07:50.669 ---- 2020-03-12_21:07:41.570
+2020-03-12 21:07:55.352 ---- Client mosqsub/1-fd9768eae33b received PUBLISH (d0, q0, r0, m0, 'test', ... (23 bytes))
+2020-03-12 21:07:55.355 ---- 2020-03-12_21:07:51.882
+2020-03-12 21:07:58.794 ---- Client mosqsub/1-fd9768eae33b received PUBLISH (d0, q0, r0, m0, 'test', ... (23 bytes))
+2020-03-12 21:07:58.797 ---- 2020-03-12_21:07:57.373
+2020-03-12 21:08:01.542 ---- Client mosqsub/1-fd9768eae33b received PUBLISH (d0, q0, r0, m0, 'test', ... (23 bytes))
+2020-03-12 21:08:01.547 ---- 2020-03-12_21:08:00.300
+2020-03-12 21:08:03.770 ---- Client mosqsub/1-fd9768eae33b received PUBLISH (d0, q0, r0, m0, 'test', ... (23 bytes))
+2020-03-12 21:08:03.773 ---- 2020-03-12_21:08:02.533
+2020-03-12 21:08:06.883 ---- Client mosqsub/1-fd9768eae33b received PUBLISH (d0, q0, r0, m0, 'test', ... (23 bytes))
+2020-03-12 21:08:06.896 ---- 2020-03-12_21:08:05.252
+2020-03-12 21:08:36.918 ---- Client mosqsub/1-fd9768eae33b sending PINGREQ
+2020-03-12 21:08:36.980 ---- Client mosqsub/1-fd9768eae33b received PINGRESP
+2020-03-12 21:09:37.063 ---- Client mosqsub/1-fd9768eae33b sending PINGREQ
+2020-03-12 21:09:37.109 ---- Client mosqsub/1-fd9768eae33b received PINGRESP
+2020-03-12 21:10:37.213 ---- Client mosqsub/1-fd9768eae33b sending PINGREQ
+2020-03-12 21:10:37.264 ---- Client mosqsub/1-fd9768eae33b received PINGRESP
+2020-03-12 21:11:37.348 ---- Client mosqsub/1-fd9768eae33b sending PINGREQ
+2020-03-12 21:11:37.404 ---- Client mosqsub/1-fd9768eae33b received PINGRESP
+2020-03-12 21:12:37.486 ---- Client mosqsub/1-fd9768eae33b sending PINGREQ
+2020-03-12 21:12:37.533 ---- Client mosqsub/1-fd9768eae33b received PINGRESP
+2020-03-12 21:13:36.696 ---- Client mosqsub/1-fd9768eae33b sending PINGREQ
+2020-03-12 21:13:36.751 ---- Client mosqsub/1-fd9768eae33b received PINGRESP
+2020-03-12 21:14:36.864 ---- Client mosqsub/1-fd9768eae33b sending PINGREQ
+2020-03-12 21:14:36.920 ---- Client mosqsub/1-fd9768eae33b received PINGRESP
+2020-03-12 21:15:37.011 ---- Client mosqsub/1-fd9768eae33b sending PINGREQ
+2020-03-12 21:15:37.053 ---- Client mosqsub/1-fd9768eae33b received PINGRESP
