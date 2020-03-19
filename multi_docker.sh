@@ -2,7 +2,7 @@
 
 NETWORK_NAME="pumba_net"
 IP_ADDR="172.20.0."
-CLUSTER_TYPE="vernemq"
+CLUSTER_TYPE="hivemq"
 DEFAULT_INTERFACE="eth0"
 TOTAL_BROKERS=5
 DELAY=50
@@ -107,11 +107,30 @@ function RUN_VERNEMQ {
         -e DOCKER_VERNEMQ_ACCEPT_EULA=yes \
 		    -e DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on \
         -e DOCKER_VERNEMQ_NODENAME="${IP_ADDR}${bkr}" \
-        -e DOCKER_VERNEMQ_DISCOVERY_NODE=127.20.0.4 \
+        -e DOCKER_VERNEMQ_DISCOVERY_NODE=172.20.0.2 \
         flipperthedog/vernemq:latest
  	  done
 }
 ###### END OF VERNEMQ ######
+
+###### HIVEMQ ######
+function RUN_HIVEMQ {
+  for bkr in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
+    do
+      BRK_NAME="${CLUSTER_TYPE}_${bkr}"
+
+      docker run -d --network=$NETWORK_NAME \
+        --hostname "$BRK_NAME" \
+        --name "$BRK_NAME" \
+        -p $((5670+bkr)):5684 \
+         -v "$PWD"/confiles/hive_basic.xml:/opt/hivemq/conf/config.xml \
+        -e HIVEMQ_BIND_ADDRESS="${IP_ADDR}${bkr}" \
+        hivemq/hivemq4
+ 	  done
+}
+###### END OF VERNEMQ ######
+
+
 
 ###### MAIN ######
 echo "Cleaning up the environment..."
@@ -142,6 +161,10 @@ case $CLUSTER_TYPE in
 
   VERNEMQ | vernemq | VERNE | verne )
     RUN_VERNEMQ
+  ;;
+
+  HIVEMQ | hivemq | HIVE | hive )
+    RUN_HIVEMQ
   ;;
   *)
     echo -n "$BROKER not available"
