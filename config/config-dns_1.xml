@@ -41,12 +41,8 @@
       <static>
         <node>
           <!-- replace this IP with the IP address of your interface -->
-          <host>
-            <bind-address>${HIVEMQ_BIND_ADDRESS}</bind-address>
-          </host>
-          <port>
-            <bind-port>${HIVEMQ_CLUSTER_PORT}</bind-port>
-          </port>
+          <host><bind-address>${HIVEMQ_BIND_ADDRESS}</bind-address></host>
+          <port><bind-port>${HIVEMQ_CLUSTER_PORT}</bind-port></port>
         </node>
         <node>
           <host>172.22.0.3</host>

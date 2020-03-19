@@ -21,17 +21,28 @@
 ############### Create the config file##################
 
 config_template_file=../config/config-dns.xml
-output_file=../config/config-dns_1.xml
+output_file=../config/config-dns_new_1.xml
 
 ip_pool=172.22.0
 port_disc_node=8000
 
+PWD=$(pwd)
 
+# Copy the template file to new file
 sudo cp $config_template_file $output_file
+# Delete all nodes present in the static tag
+# Necessary to avoid wrong parsing during adding new node elements 
+sudo xmlstarlet ed -L -d '//discovery/static/node' $output_file
+# Adding node elements
+# First we add the host and port of the actual node
 sudo xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file 
+sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.2 $output_file
+sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
+# Adding the other nodes, with which the current node has to create a cluster
+sudo xmlstarlet ed -L -a '//discovery/static/node[last()]' -t elem -n 'node' $output_file 
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.3 $output_file
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
-sudo xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file 
+sudo xmlstarlet ed -L -a '//discovery/static/node[last()]' -t elem -n 'node' $output_file 
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.4 $output_file
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
 
@@ -45,12 +56,14 @@ docker network create --driver=bridge \
 			--subnet=$ip_pool.0/24 \
 			pumba_hivemq
 
+# -v $PWD/$output_file:/opt/hivemq/conf/config.xml \
+# -p 5674:5674 \
 docker run -d --network=pumba_hivemq \
 		--hostname hivemq1 \
 		--name d1 \
 		--ip=$ip_pool.2 \
-		-p 5674:5674 \
-		-v $output_file:/opt/hivemq/conf/config.xml \
+		--restart unless-stopped \
+		-v $PWD/$output_file:/opt/hivemq/conf/config.xml \
 		-e HIVEMQ_BIND_ADDRESS=$ip_pool.2 \
 		hivemq/hivemq:dns-image
 
@@ -65,7 +78,7 @@ docker run -d --network=pumba_hivemq \
 		--hostname hivemq2 \
 		--name d2 \
 		--ip=$ip_pool.3 \
-		-p 5675:5674 \
+		--restart unless-stopped \
 		-v /home/franci/Documents/Docker_Files/config/config-dns_2.xml:/opt/hivemq/conf/config.xml \
 		-e HIVEMQ_BIND_ADDRESS=$ip_pool.3 \
 		hivemq/hivemq:dns-image
@@ -79,21 +92,24 @@ docker run -d --network=pumba_hivemq \
 		--hostname hivemq3 \
 		--name d3 \
 		--ip=$ip_pool.4 \
-		-p 5676:5674 \
+		--restart unless-stopped \
 		-v /home/franci/Documents/Docker_Files/config/config-dns_3.xml:/opt/hivemq/conf/config.xml \
 		-e HIVEMQ_BIND_ADDRESS=$ip_pool.4 \
 		hivemq/hivemq:dns-image
 
+#-p 5676:5674 \
 
-sleep 10
+
+sleep 15
 echo "slowing down the network"
 
+#--duration 15m \
 docker run -d --rm --network=pumba_hivemq \
                 -v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
                 --interface eth0 \
 		--duration 15m \
-                delay --time 1000 \
-                d1 d2
+                delay --time 50 \
+                $(docker ps --format "{{.Names}}"  | tr '\r\n' ' ')
 
 
 #--duration 15m \
