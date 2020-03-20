@@ -142,8 +142,8 @@ function RUN_VERNEMQ {
 
 ###### HIVEMQ ######
 function RUN_HIVEMQ {
-	config_template_file="$PWD"/../config/config-dns.xml
-	output_config_file="$PWD"/../config/config-dns_new_1.xml
+	config_template_file="$PWD"/config/config-dns.xml
+	output_config_file="$PWD"/config/config-dns_new_1.xml
 	# create the config file to 
 	CREATE_HIVEMQ_CONFIG "$config_template_file" "$output_config_file"
   	for bkr in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
