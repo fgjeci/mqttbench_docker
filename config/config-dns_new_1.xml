@@ -40,15 +40,23 @@
       <!-- Here we add the information of the nodes which create the clusters-->
       <static>
         <node>
-          <host>172.22.0.2</host>
+          <host>172.20.0.2</host>
           <port>8000</port>
         </node>
         <node>
-          <host>172.22.0.3</host>
+          <host>172.20.0.3</host>
           <port>8000</port>
         </node>
         <node>
-          <host>172.22.0.4</host>
+          <host>172.20.0.4</host>
+          <port>8000</port>
+        </node>
+        <node>
+          <host>172.20.0.5</host>
+          <port>8000</port>
+        </node>
+        <node>
+          <host>172.20.0.6</host>
           <port>8000</port>
         </node>
       </static>

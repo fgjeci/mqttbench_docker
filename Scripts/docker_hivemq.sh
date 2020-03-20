@@ -39,10 +39,12 @@ sudo xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.2 $output_file
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
 # Adding the other nodes, with which the current node has to create a cluster
-sudo xmlstarlet ed -L -a '//discovery/static/node[last()]' -t elem -n 'node' $output_file 
+# sudo xmlstarlet ed -L -a '//discovery/static/node[last()]' -t elem -n 'node' $output_file 
+sudo xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file 
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.3 $output_file
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
-sudo xmlstarlet ed -L -a '//discovery/static/node[last()]' -t elem -n 'node' $output_file 
+# sudo xmlstarlet ed -L -a '//discovery/static/node[last()]' -t elem -n 'node' $output_file 
+sudo xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.4 $output_file
 sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
 
