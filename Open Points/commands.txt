@@ -1,8 +1,8 @@
-docker run --rm -ti --network=pumba_vernemq piersfinlayson/mosquitto-clients mosquitto_pub -h 172.22.0.3  -t test -m $(date +"%Y-%m-%d_%T.%3N") -d | xargs -d$'\n' -L1 bash -c 'date "+%Y-%m-%d %T.%3N ---- $0"'
+docker run --rm -ti --network=pumba_hivemq piersfinlayson/mosquitto-clients mosquitto_pub -h 172.22.0.3  -t test -m $(date +"%Y-%m-%d_%T.%3N") -d | xargs -d$'\n' -L1 bash -c 'date "+%Y-%m-%d %T.%3N ---- $0"'
 
 SUB
 
-docker run --rm -ti --network=pumba_vernemq piersfinlayson/mosquitto-clients mosquitto_sub -h 172.22.0.2  -t test  -d | xargs -d$'\n' -L1 bash -c 'date "+%Y-%m-%d %T.%3N ---- $0"'
+docker run --rm -ti --network=pumba_hivemq piersfinlayson/mosquitto-clients mosquitto_sub -h 172.22.0.2  -t test  -d | xargs -d$'\n' -L1 bash -c 'date "+%Y-%m-%d %T.%3N ---- $0"'
 
 
 docker logs $(docker inspect --format="{{.ID}}" d1)

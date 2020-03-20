@@ -1,4 +1,18 @@
+HiveMQ
+
+- The network subnet is 172.22.0.0/24 and the docker 
+
+- The docker nodes d1 and d2 have the following ip addresses:
+	d1 -> 172.20.0.2
+	d2 -> 172.20.0.3
+
+
+4277 -> 67.63
+4347 -> 68.00
+
 For every message published, does the receiver ask to other brokers whether they have subscribers in that specific topic, or does it contain a memory storing that info?
+
+No
 
 What happens when there are more than 2 dockers?
 How is routing implemented (broadcast/tree struct)
