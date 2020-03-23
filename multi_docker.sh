@@ -65,7 +65,7 @@ function CREATE_HIVEMQ_CONFIG {
 	cp $config_template_file $output_file
 	# Delete all nodes present in the static tag
 	# Necessary to avoid wrong parsing during adding new node elements 
-	sudo xmlstarlet ed -L -d '//discovery/static/node' $output_file
+	xmlstarlet ed -L -d '//discovery/static/node' $output_file
 	# Adding node elements which shall create the cluster
 	for i in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
 	    do

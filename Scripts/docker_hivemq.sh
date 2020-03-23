@@ -29,24 +29,24 @@ port_disc_node=8000
 PWD=$(pwd)
 
 # Copy the template file to new file
-sudo cp $config_template_file $output_file
+cp $config_template_file $output_file
 # Delete all nodes present in the static tag
 # Necessary to avoid wrong parsing during adding new node elements 
-sudo xmlstarlet ed -L -d '//discovery/static/node' $output_file
+xmlstarlet ed -L -d '//discovery/static/node' $output_file
 # Adding node elements
 # First we add the host and port of the actual node
-sudo xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file 
-sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.2 $output_file
-sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
+xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file 
+xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.2 $output_file
+xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
 # Adding the other nodes, with which the current node has to create a cluster
 # sudo xmlstarlet ed -L -a '//discovery/static/node[last()]' -t elem -n 'node' $output_file 
-sudo xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file 
-sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.3 $output_file
-sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
+xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file 
+xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.3 $output_file
+xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
 # sudo xmlstarlet ed -L -a '//discovery/static/node[last()]' -t elem -n 'node' $output_file 
-sudo xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file
-sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.4 $output_file
-sudo xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
+xmlstarlet ed -L -s '//discovery/static' -t elem -n 'node' $output_file
+xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'host' -v $ip_pool.4 $output_file
+xmlstarlet ed -L -s "//discovery/static/node[last()]" -t elem -n 'port' -v $port_disc_node $output_file
 
 
 docker stop $(docker ps -a -q)

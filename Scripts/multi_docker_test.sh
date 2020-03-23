@@ -9,7 +9,7 @@ DELAY=50
 DURATION_SIM="15m"
 PWD=$(pwd)
 FIST_BROKER_NUM=2
-LAST_BROKER_NUM=$((TOTAL_BROKERS+1))
+LAST_BROKER_NUM=$((TOTAL_BROKERS+FIST_BROKER_NUM-1))
 
 
 ###### EMQX HELPER FUNCTIONS ######
@@ -65,7 +65,7 @@ function CREATE_HIVEMQ_CONFIG {
 	cp $config_template_file $output_file
 	# Delete all nodes present in the static tag
 	# Necessary to avoid wrong parsing during adding new node elements 
-	sudo xmlstarlet ed -L -d '//discovery/static/node' $output_file
+	xmlstarlet ed -L -d '//discovery/static/node' $output_file
 	# Adding node elements which shall create the cluster
 	for i in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
 	    do
@@ -204,13 +204,13 @@ esac
 
 
 
-#echo "Slowing down the network..."
-#sleep 20
-#
-#docker run -d --rm --network=pumba_net \
-# 		--name pumba \
-#		-v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
-#		--interface $DEFAULT_INTERFACE \
-#		--duration $DURATION_SIM \
-#		delay --time $DELAY \
-#		$(docker ps --format "{{.Names}}"  | tr '\r\n' ' ')
+echo "Slowing down the network..."
+sleep 20
+
+docker run -d --rm --network=pumba_net \
+ 		--name pumba \
+		-v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
+		--interface $DEFAULT_INTERFACE \
+		--duration $DURATION_SIM \
+		delay --time $DELAY \
+		$(docker ps --format "{{.Names}}"  | tr '\r\n' ' ')
