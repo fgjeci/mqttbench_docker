@@ -1,12 +1,14 @@
 #!/bin/bash
 
+#input params type, delay, num broker
+
 NETWORK_NAME="pumba_net"
 IP_ADDR="172.20.0."
-CLUSTER_TYPE="hivemq"
+CLUSTER_TYPE="rabbitmq"
 DEFAULT_INTERFACE="eth0"
 TOTAL_BROKERS=5
 DELAY=50
-DURATION_SIM="15m"
+DURATION_SIM="9999m"
 PWD=$(pwd)
 FIST_BROKER_NUM=2
 LAST_BROKER_NUM=$((TOTAL_BROKERS+1))
@@ -204,13 +206,13 @@ esac
 
 
 
-#echo "Slowing down the network..."
-#sleep 20
-#
-#docker run -d --rm --network=pumba_net \
-# 		--name pumba \
-#		-v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
-#		--interface $DEFAULT_INTERFACE \
-#		--duration $DURATION_SIM \
-#		delay --time $DELAY \
-#		$(docker ps --format "{{.Names}}"  | tr '\r\n' ' ')
+echo "Slowing down the network..."
+sleep 20
+
+docker run -d --rm --network=pumba_net \
+ 		--name pumba \
+		-v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
+		--interface $DEFAULT_INTERFACE \
+		--duration $DURATION_SIM \
+		delay --time $DELAY \
+		$(docker ps --format "{{.Names}}"  | tr '\r\n' ' ')
