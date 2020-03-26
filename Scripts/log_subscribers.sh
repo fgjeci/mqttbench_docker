@@ -12,6 +12,7 @@
 # For simplicity, we do not add more than 9 clients to a broker
 IP_ADDR="172.20.0."
 NETWORK_NAME="pumba_net"
+CLUSTER_TYPE="hivemq"
 # must be even number of clients for sake of simplicity
 TOTAL_SUBSCRIBERS=4
 NR_SUBSCRIBERS_PER_BROKER=2
@@ -27,9 +28,9 @@ for broker in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
 		for sub in $(seq 1 $NR_SUBSCRIBERS_PER_BROKER)
 			do
 				echo "Emptying logfile hivemq_sub$broker$sub.log ..."
-				truncate -s 0 "../Network Analysis/logs/hivemq_sub$broker$sub.log"
+				truncate -s 0 "../Network Analysis/logs/$CLUSTER_TYPE/hivemq_sub$broker$sub.log"
 				echo "Storing subscriber sub_$broker$sub's log file into hivemq_sub$broker$sub.log ..."
-				docker container logs "sub_$broker$sub" --details --timestamps | xargs -d$'\n' -L1 echo "$IP_ADDR$broker$sub -" >> "../Network Analysis/logs/hivemq_sub$broker$sub.log"
+				docker container logs "sub_$broker$sub" --details --timestamps | xargs -d$'\n' -L1 echo "$IP_ADDR$broker$sub -" >> "../Network Analysis/logs/$CLUSTER_TYPE/hivemq_sub$broker$sub.log"
 			done
 	done
 

@@ -149,14 +149,14 @@ function RUN_HIVEMQ {
   	for bkr in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
 		do
 			BRK_NAME="${CLUSTER_TYPE}_${bkr}"
-			docker run -d --network=$NETWORK_NAME \
-			--hostname "$BRK_NAME" \
-			--name "$BRK_NAME" \
-			--ip="${IP_ADDR}${bkr}" \
-			-p $((5690+bkr)):5684 \
-			-v "$output_config_file":/opt/hivemq/conf/config.xml \
-			-e HIVEMQ_BIND_ADDRESS="${IP_ADDR}${bkr}" \
-			francigjeci/hivemq:dns-image
+			docker run -d --network="$NETWORK_NAME" \
+					--hostname="$BRK_NAME" \
+					--name="$BRK_NAME" \
+					--ip="${IP_ADDR}${bkr}" \
+					-p $((5690+bkr)):5692 \
+					-v "$output_config_file":/opt/hivemq/conf/config.xml \
+					-e HIVEMQ_BIND_ADDRESS="${IP_ADDR}${bkr}" \
+					francigjeci/hivemq:dns-image
 		done
 }
 ###### END OF VERNEMQ ######
@@ -172,10 +172,13 @@ docker network rm $NETWORK_NAME
 
 echo "Creating a new network..."
 docker network create \
-		--driver=bridge \
+		--driver=macvlan \
 		--subnet="$IP_ADDR"0/16 \
 		--ip-range="$IP_ADDR"0/24 \
 		$NETWORK_NAME
+
+# --driver=bridge \ -> using bridge as network driver introduces many TCP retransmissions and reduced significantly the network throughput
+# Thus, we test the network with the macvlan driver to see its performace
 
 
 echo "Creating brokers of type... $CLUSTER_TYPE"
@@ -207,10 +210,12 @@ esac
 echo "Slowing down the network..."
 sleep 20
 
-docker run -d --rm --network=pumba_net \
- 		--name pumba \
+docker run -d --rm --network="$NETWORK_NAME" \
 		-v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
 		--interface $DEFAULT_INTERFACE \
-		--duration $DURATION_SIM \
-		delay --time $DELAY \
 		$(docker ps --format "{{.Names}}"  | tr '\r\n' ' ')
+
+
+# --duration $DURATION_SIM \
+# --time $DELAY \
+#--name pumba \

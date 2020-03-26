@@ -30,12 +30,15 @@ for broker in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
 		for sub in $(seq 1 $NR_SUBSCRIBERS_PER_BROKER)
 			do
 				echo "Subscriber $IP_ADDR$broker$sub subscribing to broker $IP_ADDR$broker"
-				docker run -d --rm -ti --network=$NETWORK_NAME \
+				docker run -d --rm -it --network=$NETWORK_NAME \
 						--ip="$IP_ADDR$broker$sub" \
 						--name="sub_$broker$sub" \
 						piersfinlayson/mosquitto-clients mosquitto_sub \
 						-h "$IP_ADDR$broker"  \
-						-t test  
+						-t test \
+						-d | xargs -d$'\n' -L1 echo ""
+				# Sleeping 5 seconds to permit all message exchange occur
+				sleep 5
 			done
 	done
 
