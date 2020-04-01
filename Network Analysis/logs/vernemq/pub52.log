@@ -1,0 +1,4 @@
+172.20.0.52 2020-03-31 19:27:40.420 -> Client mosqpub/1-f1b634f7b538 sending CONNECT
+172.20.0.52 2020-03-31 19:27:40.436 -> Client mosqpub/1-f1b634f7b538 received CONNACK
+172.20.0.52 2020-03-31 19:27:40.440 -> Client mosqpub/1-f1b634f7b538 sending PUBLISH (d0, q0, r0, m1, 'test', ... (37 bytes))
+172.20.0.52 2020-03-31 19:27:40.447 -> Client mosqpub/1-f1b634f7b538 sending DISCONNECT

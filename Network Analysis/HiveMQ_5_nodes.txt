@@ -1,0 +1,260 @@
+HiveMQ
+
+************* Changed the network driver from bridge to macvlan. This avoids the overhead of bridge network, and also avoid TCP retransmissions
+
+This files includes the pecularites of the communication
+
+- The docker nodes hivemq_2 - hivemq_6 have the following ip addresses:
+	hivemq_2 -> 172.20.0.2
+	hivemq_3 -> 172.20.0.3
+	hivemq_4 -> 172.20.0.4
+	hivemq_5 -> 172.20.0.5
+	hivemq_6 -> 172.20.0.6
+
+- Topology:
+	1) The HiveMQ broker nodes are connected through mesh topology, i.e. each MQTT broker is 	connected to all the other nodes via static configuration. 
+	2) In this exercise, we have included 8 clients, 4 subscribers and 4 publishers, which are distributed as follow: 
+		+ sub_21 (172.20.0.21) and sub_22 (172.20.0.22) is connected to broker 172.20.0.2
+		+ sub_31 (172.20.0.31) and sub_32 (172.20.0.32) is connected to broker 172.20.0.3
+		
+		+ pub_51 (172.20.0.51) and pub_52 (172.20.0.52) is connected to broker 172.20.0.5
+		+ pub_61 (172.20.0.61) and pub_62 (172.20.0.62) is connected to broker 172.20.0.6
+
+		+ broker(172.20.0.4) is idle, meaning that it has neither publishers, nor subscribers connected to it
+
+- The docker uses ARP protocol to resolve it MAC address with its IP address.
+	The docker exchange these ARP packets to claim themselves in the network by broadcasting their presence
+	Whenever a new subscriber initiates a connect request, it searches for the node it is intereted to, by broadcasting an ARP request to the local network and asking the broker which has the IP it tries to instantiate a connection.
+
+- Strategy:
+	1) We have emulated the former topology and we have used Wireshark to capture the traffic exchanged between dockers. 
+	2) The aforementioned topology is thought to answer several benchmarking related question, listed below:
+		+ For every message published, does the receiver ask to other brokers whether they have subscribers in that specific topic, or does it contain a memory storing that info?
+		
+		Answer: Referring to the exchanged messages, when a docker receives a publish message from one of its clients, it sends this message to the next broker it is connected to. This broker relays the received message to another one, different from the first ones, until the cycle is closed. Apparently, the overlay network topology, through which the broker relay their messages to other brokers, follow a One-Branch-Tree topology. That is, the messages is passed in sequence, from one broker to another, until all brokers have received the MQTT message.
+		
+		+ Does all brokers follow the same sequence? 
+		Subscribers
+			     - First sequence : 21 - 2 - 4 - 6
+			6439 - Second sequence: 22 - 2
+						2 - 4					
+						4 - 5
+						4 - 2
+						4 - 5
+						4 - 6
+			6471 - Connect ACK: 	22 - 2
+						2 - 4
+						4 - 6
+						4 - 5 -> 6492					
+						4 - 2 -> 6494
+						
+			- Third sequence: 	31 - 3 -> 6545
+						3 - 2 -> 6547
+			6560 - Connect Ack : 	31 - 3
+			6562 - Subscriver Req :	31 - 3			
+						3 - 6 -> 6566
+						6 - 4 -> 6568
+						6 - 5 -> 6575 (?)
+						3 - 2 -> 6601	
+						
+						
+			- Fourth sequence : 	32 - 3 -> 6659
+			6660 - Connect Command:	32 - 3 -> 6660			
+						3 - 6 -> 6662
+			6678 - Connect Ack :	3 - 32 
+			6680 - Subscribe :	32 - 3		
+				 		3 - 6 -> 6682
+						6 - 4 -> 6684
+			6690 - Subscribe Ack : 	3 - 32		
+						3 - 6 -> 6693
+
+		+ Publishers
+			- First sequence : 	
+			7097 - Connect Command:	51 - 5
+						5 - 3 -> 7099
+						3 - 4 -> 7101 
+						3 - 5 -> 7103
+			7128 - Connect Ack : 	5 - 51			
+			7130 - Publish : 	51 - 5			
+			7131 - Disconnect : 	51 - 5			
+						5 - 3 -> 4134			
+						5 - 4 -> 7154
+						3 - 4 -> 7161
+						4 - 5 -> 8286 **** list of sub
+						5 - 4 -> 7176 - the whole msg
+						5 - 3 -> 7185 - the whole msg
+						3 - 2 -> 7191 - the whole msg
+						3 - 6 -> 7192 - the whole msg
+						3 - 31-> 7198 - publish (the receiver)
+						3 - 32-> 7200 - publish (the receiver)
+						4 - 2 -> 7202 
+						4 - 6 -> 7214 - the whole msg	
+						4 - 5 -> 7218 - the whole msg
+						4 - 2 -> 7227 - the whole msg
+						2 - 21-> 7237 - publish (the receiver)
+						2 - 22-> 7239 - publish (the receiver)
+			- Second sequence : 	
+			7368 - Connect Command:	52 - 5
+						5 - 3 -> 7374
+						
+			7397 - Connect Ack : 	5 - 52	
+			7399 - Publish : 	52 - 5			
+			7401 - Disconnect : 	52 - 5
+						4 - 5 -> the list of subscribers ****
+						3 - 2 -> 7424 **** a list of hashed items (subscribers/ publishers)- to be seen			
+						5 - 4 -> 7435 - the whole msg		
+						5 - 3 -> 7437 - the whole msg
+						4 - 2 -> 7453 - a sub id 
+						3 - 2 -> 7458 - the whole msg
+						3 - 31-> 7460 - publish (the receiver)
+						3 - 2 -> 7462 - sub id
+						4 - 2 -> 7466 - sub id
+						4 - 6 -> 7472 - the whole msg 
+						4 - 5 -> 7474 - the whole msg
+						3 - 32-> 7478 - publish 
+						3 - 6 -> 7480 - the whole msg
+						4 - 2 -> the whole msg
+						2 - 21-> 7497 - publish (the receiver)
+						2 - 22-> 7506 - publish (the receiver) 
+						
+			- Third sequence : 	
+			7691 - Connect Command:	61 - 6
+						6 - 3 -> 7708 - sub id
+						3 - 2 -> 7710 - sub id
+						3 - 6 -> 7716 - sub id
+			7742 - Connect Ack : 	6 - 61			
+			7744 - Publish : 	61 - 6			
+			7745 - Disconnect : 	61 - 6			
+						6 - 3 -> 7752 - sub id			
+						6 - 4 -> 7780 - msg
+						6 - 3 -> 7161 - msg
+						3 - 2 -> 7785 - the whole msg
+						3 - 31-> 7795 - publish (the receiver)
+						3 - 32-> 7791 - publish (the receiver)
+						4 - 5 -> 7797 - the whole msg 
+						4 - 6 -> 7805 - the whole msg	
+						4 - 2 -> 7815 - the whole msg
+						2 - 21-> 7834 - publish (the receiver)
+						2 - 22-> 7824 - publish (the receiver)	
+			- Fourth sequence : 	
+			7898 - Connect Command:	62 - 6
+						6 - 5 -> 7901 - sub id
+			7922 - Connect Ack : 	6 - 62			
+			7924 - Publish : 	62 - 6			
+			7925 - Disconnect : 	62 - 6			
+						6 - 5 -> 7931 - sub id			
+						6 - 3 -> 7934 - msg
+						6 - 4 -> 7937 - msg
+						3 - 2 -> 7945 - the whole msg
+						3 - 6 -> 7947 - msg
+						4 - 6 -> 7960 - msg
+						3 - 6 -> 7962 - msg
+						3 - 2 -> 7962 - sub id
+						3 - 31-> 7970 - publish (the receiver)
+						4 - 2 -> 7976 - msg
+						2 - 22-> 7982 - publish (the receiver)
+						2 - 21-> 7984 - publish (the receiver)
+						3 - 32-> 7993 - publish (the receiver)
+						4 - 5 -> 7797 - the whole msg 
+						4 - 6 -> 7805 - the whole msg	
+						4 - 2 -> 7815 - the whole msg
+						2 - 21-> 7834 - publish (the receiver)
+						2 - 22-> 7824 - publish (the receiver)			
+						
+						
+						
+Second order of message exchange:
+						
+		Publishers : 
+			- First sequence :
+			8243 - Connect Command: 51 - 5			
+						5 - 3 -> 8249 - sub id
+			8268 - Connect Ack : 	5 - 51			
+			8270 - Publish :	51 - 5			
+						5 - 3 -> 8275 - sub id
+						5 - 4 -> 8284 - info the sub topic
+						5 - 3 -> 8301 - the whole msg
+						5 - 4 -> 8302 - the whole msg
+						4 - 2 -> 8307 - sub id
+						4 - 6 -> 8309 - the whole msg
+						3 - 2 -> 8315 - the whole msg
+						3 - 6 -> 8319 - the whole msg
+						2 - 21-> 8333 - publish
+						4 - 2 -> 8348 - the whole msg
+						2 - 22-> 8349 - publish
+						3 - 31-> 8352 - publish
+						3 - 32-> 8356 - publish
+						
+			- Second sequence :
+			8500 - Connect Command:	52 - 5	
+						5 - 3 -> 8502 - sub id
+						3 - 6 -> 8506 - sub id
+			8535 - Connect Ack :	52 - 5			
+						5 - 3 -> 8541 - sub id
+						5 - 4 -> 8551 - inform the sub topic
+						3 - 6 -> 8554 - sub id
+						5 - 4 -> 8565 - the whole msg
+						5 - 3 -> 8567 - the whole msg
+						4 - 2 -> 8575 - sub id
+						4 - 2 -> 8579 - the whole msg
+						4 - 5 -> 8581 - the whole msg
+						3 - 2 -> 8591 - the whole msg
+						3 - 6 -> 8594 - the whole msg
+						3 - 31-> 8597 - publish			
+						3 - 31-> 8603 - publish			
+						2 - 22-> 8623 - publish	
+						2 - 21-> 8625 - publish
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						

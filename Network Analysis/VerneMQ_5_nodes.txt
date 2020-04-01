@@ -1,0 +1,189 @@
+HiveMQ
+
+************* Changed the network driver from bridge to macvlan. This avoids the overhead of bridge network, and also avoid TCP retransmissions
+
+This files includes the pecularites of the communication
+
+- The docker nodes vernemq_2 - vernemq_6 have the following ip addresses:
+	vernemq_2 -> 172.20.0.2
+	vernemq_3 -> 172.20.0.3
+	vernemq_4 -> 172.20.0.4
+	vernemq_5 -> 172.20.0.5
+	vernemq_6 -> 172.20.0.6
+
+- Topology:
+	1) The VerneMQ broker nodes are connected through mesh topology, i.e. each MQTT broker is 	connected to all the other nodes via static configuration. 
+	2) In this exercise, we have included 8 clients, 4 subscribers and 4 publishers, which are distributed as follow: 
+		+ sub_21 (172.20.0.21) and sub_22 (172.20.0.22) is connected to broker 172.20.0.2
+		+ sub_31 (172.20.0.31) and sub_32 (172.20.0.32) is connected to broker 172.20.0.3
+		
+		+ pub_51 (172.20.0.51) and pub_52 (172.20.0.52) is connected to broker 172.20.0.5
+		+ pub_61 (172.20.0.61) and pub_62 (172.20.0.62) is connected to broker 172.20.0.6
+
+		+ broker(172.20.0.4) is idle, meaning that it has neither publishers, nor subscribers connected to it
+
+- The docker uses ARP protocol to resolve it MAC address with its IP address.
+	The docker exchange these ARP packets to claim themselves in the network by broadcasting their presence
+	Whenever a new subscriber initiates a connect request, it searches for the node it is intereted to, by broadcasting an ARP request to the local network and asking the broker which has the IP it tries to instantiate a connection.
+
+- Strategy:
+	1) We have emulated the former topology and we have used Wireshark to capture the traffic exchanged between dockers. 
+	2) Define the logic of cluster creation
+		Connect 2 - 3:
+		40 - 3 -> 2 : SEND_NAME VerneMQ@172.20.0.3
+		44 - 2 -> 3 : SEND_CHALLENGE VerneMQ@172.20.0.2
+		50 - 172.20.0.3 -> 172.20.0.2 : REG_SEND VerneMQ@172.20.0.3
+		114 - 2 -> 3 : TCP message vmq-connect 172.20.0.2
+		121 - 3 -> 2 : TCP message vmq-connect 172.20.0.3
+		Connect 2 - 5:
+		198 - 5 -> 2 : SEND_NAME VerneMQ@172.20.0.5
+		212 - 2 -> 5 : SEND_CHALLENGE VerneMQ@172.20.0.2
+		231 - 2 -> 5 : REG_SEND VerneMQ@172.20.0.2 + includes the name of other nodes it is connected to, i.e 172.20.0.3
+		Connect 2 - 4:
+		219 - 4 -> 2 : SEND_NAME VerneMQ@172.20.0.5
+		239 - 2 -> 4 : SEND_CHALLENGE VerneMQ@172.20.0.2
+		304 - 2 -> 4 : REG_SEND VerneMQ@172.20.0.2 + includes the name of other nodes it is connected to, i.e 172.20.0.3 (the list of node connected)
+		
+	3) The aforementioned topology is thought to answer several benchmarking related question, as listed below:
+		+ For every message published, does the receiver ask to other brokers whether they have subscribers in that specific topic, or does it contain a memory storing that info?
+		
+		Answer: Referring to the exchanged messages, when a docker receives a publish message from one of its clients, it sends this message to the next broker it is connected to. This broker relays the received message to another one, different from the first ones, until the cycle is closed. Apparently, the overlay network topology, through which the broker relay their messages to other brokers, follow a One-Branch-Tree topology. That is, the messages is passed in sequence, from one broker to another, until all brokers have received the MQTT message.
+		
+		+ Does all brokers follow the same sequence? 
+		Subscribers
+			     - First sequence : 21 - 2 -> 1754
+			1757 - Connect Command:	21 - 2 -> 1757			
+						2 - 3 -> 1759 sub id
+			1761 - Connect Ack :	2 - 21 -> 1761
+						2 - 4 -> 1762 sub id 
+			1765 - Subscribe  Req:	21 - 2 -> topic
+						4 - 3 -> 1767 sub id + broker sub	
+			1769 - Subscribe Ack : 	2 - 21		
+						2 - 3 -> 1771 sub id + topic
+						2 - 4 -> 1773 sub id + topic
+						4 - 3 -> 1775 sub id + topic
+						3 - 5 -> 1777 sub id
+						3 - 6 -> 1779 sub id
+						3 - 5 -> 1783 sub id + topic
+						3 - 6 -> 1785 sub id + topic
+						6 - 2 -> 1789 sub id
+						6 - 2 -> 1791 sub id + topic
+						5 - 4 -> -||-
+						4 - 5 -> -||-
+						
+		+ Publishers
+			- First sequence : 	
+			2925 - Connect Command:	51 - 5
+						5 - 6 -> 2929 pub id
+						5 - 4 -> 2947 pub id 
+			2956 - Connect Ack : 	5 - 51			
+			2958 - Publish : 	51 - 5		
+						5 - 3 -> 2963 - the whole msg		
+						5 - 2 -> 2965 - the whole msg
+						4 - 2 -> 2969 - pub id
+						4 - 3 -> 2971 - pub id + * pub broker
+						3 - 5 -> 2973 - pub id
+						3 - 6 -> 2975 - pub id + * pub broker
+						6 - 2 -> 2977 - pub id
+						3 - 32-> 2979 - publish (the receiver)
+						3 - 31-> 2981 - publish (the receiver)
+						2 - 3 -> 2985 - pub id
+						2 - 21-> 2987 - publish (the receiver)
+						2 - 22-> 2989 - publish (the receiver)
+						5 - 4 -> 2993 - pub id
+						4 - 3 -> 2995 - pub id
+						4 - 2 -> 2997 - pub id	
+						2 - 3 -> 3001 - pub id
+						3 - 6 -> 3003 - pub id
+						3 - 2 -> 3025 - pub id
+						3 - 4 -> -||-
+						4 - 3 -> -||-
+						2 - 3 -> -||-
+						3 - 5 -> -||-
+						5 - 3 -> -||-
+						6 - 3 -> cluster members' name
+			- Second sequence : 	
+			3097 - Connect Command:	52 - 5
+						5 - 3 -> 3100
+			3125 - Connect Ack : 	5 - 52	
+						4 - 2 -> 3130 pub id
+						4 - 3 -> 3132 pub id
+			3136 - Publish : 	52 - 5		
+						5 - 3 -> 3138 - the whole msg		
+						5 - 2 -> 3140 - the whole msg		
+						
+Second order of message exchange:
+						
+		Publishers : 
+			- First sequence :
+			3644 - Connect Command: 51 - 5			
+						5 - 3 -> 3648 - pub id			
+						5 - 4 -> 3664 - pub id
+						4 - 2 -> 3670 - pub id
+						4 - 3 -> 3672 - pub id			
+			3683 - Publish :	51 - 5			
+						3 - 6 -> 3686 - pub id
+						5 - 3 -> 3687 - the whole msg
+						5 - 2 -> 3689 - the whole msg
+						2 - 21-> 3691 - publish
+						2 - 22-> 3693 - publish
+						2 - 32-> 3695 - publish
+						2 - 31-> 3697 - publish
+						5 - 4 -> 3702 - pub id
+						4 - 2 -> 3704 - pub id
+						4 - 3 -> 3706 - pub id
+						3 - 6 -> 3708 - pub id
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						
+						

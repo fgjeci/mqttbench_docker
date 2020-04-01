@@ -1,0 +1,31 @@
+172.20.0.22 - 2020-03-23T17:29:13.794301246Z  Client mosqsub/1-ec3a67b1cbff sending CONNECT
+172.20.0.22 - 2020-03-23T17:29:14.255260905Z  Client mosqsub/1-ec3a67b1cbff received CONNACK
+172.20.0.22 - 2020-03-23T17:29:14.255298572Z  Client mosqsub/1-ec3a67b1cbff sending SUBSCRIBE (Mid: 1, Topic: test, QoS: 0)
+172.20.0.22 - 2020-03-23T17:29:14.521134358Z  Client mosqsub/1-ec3a67b1cbff received SUBACK
+172.20.0.22 - 2020-03-23T17:29:14.521167073Z  Subscribed (mid: 1): 0
+172.20.0.22 - 2020-03-23T17:29:34.246328183Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:29:34.246712118Z  172.20.0.51 - 2020-03-23 18:29:28.920
+172.20.0.22 - 2020-03-23T17:29:39.551166822Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:29:39.551208451Z  172.20.0.52 - 2020-03-23 18:29:36.944
+172.20.0.22 - 2020-03-23T17:29:44.350700543Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:29:44.350860971Z  172.20.0.61 - 2020-03-23 18:29:40.628
+172.20.0.22 - 2020-03-23T17:29:48.843133436Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:29:48.845672717Z  172.20.0.62 - 2020-03-23 18:29:45.659
+172.20.0.22 - 2020-03-23T17:29:55.099619514Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:29:55.099774619Z  172.20.0.51 - 2020-03-23 18:29:51.673
+172.20.0.22 - 2020-03-23T17:29:58.414050719Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:29:58.414088861Z  172.20.0.52 - 2020-03-23 18:29:56.076
+172.20.0.22 - 2020-03-23T17:30:01.770266571Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:30:01.770613241Z  172.20.0.61 - 2020-03-23 18:29:59.417
+172.20.0.22 - 2020-03-23T17:30:04.994489974Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:30:04.994526787Z  172.20.0.62 - 2020-03-23 18:30:02.897
+172.20.0.22 - 2020-03-23T17:30:09.575334411Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:30:09.575378855Z  172.20.0.51 - 2020-03-23 18:30:07.139
+172.20.0.22 - 2020-03-23T17:30:13.202458384Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:30:13.202536729Z  172.20.0.52 - 2020-03-23 18:30:10.639
+172.20.0.22 - 2020-03-23T17:30:14.201614979Z  Client mosqsub/1-ec3a67b1cbff sending PINGREQ
+172.20.0.22 - 2020-03-23T17:30:14.257945296Z  Client mosqsub/1-ec3a67b1cbff received PINGRESP
+172.20.0.22 - 2020-03-23T17:30:17.921179932Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:30:17.921485302Z  172.20.0.61 - 2020-03-23 18:30:14.293
+172.20.0.22 - 2020-03-23T17:30:21.149009119Z  Client mosqsub/1-ec3a67b1cbff received PUBLISH (d0, q0, r0, m0, 'test', ... (37 bytes))
+172.20.0.22 - 2020-03-23T17:30:21.151479516Z  172.20.0.62 - 2020-03-23 18:30:19.278

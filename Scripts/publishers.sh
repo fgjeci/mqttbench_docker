@@ -11,7 +11,7 @@
 # For simplicity, we do not add more than 9 clients to a broker
 IP_ADDR="172.20.0."
 NETWORK_NAME="pumba_net"
-CLUSTER_TYPE="hivemq"
+CLUSTER_TYPE="vernemq"
 # must be even number of clients for sake of simplicity
 TOTAL_SUBSCRIBERS=4
 NR_SUBSCRIBERS_PER_BROKER=2
@@ -30,7 +30,7 @@ for broker in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
 		for pub in $(seq 1 $NR_SUBSCRIBERS_PER_BROKER)
 			do
 				echo "Emptying logfile hivemq_pub$broker$pub.log ..."
-				truncate -s 0 "../Network Analysis/logs/$CLUSTER_TYPE/hivemq_pub$broker$pub.log"
+				truncate -s 0 "../Network Analysis/logs/$CLUSTER_TYPE/pub$broker$pub.log"
 				echo "Publisher $IP_ADDR$broker$pub publishing to broker $IP_ADDR$broker"
 				docker run --rm -ti --network=$NETWORK_NAME \
 						--ip="$IP_ADDR$broker$pub" \
@@ -40,7 +40,7 @@ for broker in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
 						-t test  \
 						-m "$IP_ADDR$broker$pub - $(date +'%Y-%m-%d %T.%3N')" \
 						-d | xargs -d$'\n' -L1 bash -c 'date "+%Y-%m-%d %T.%3N -> $0"' \
-						| xargs -d$'\n' -L1 echo $IP_ADDR$broker$pub >> "../Network Analysis/logs/$CLUSTER_TYPE/hivemq_pub$broker$pub.log"
+						| xargs -d$'\n' -L1 echo $IP_ADDR$broker$pub >> "../Network Analysis/logs/$CLUSTER_TYPE/pub$broker$pub.log"
 				# Sleep 1 second to distinguish between different messages				
 				sleep 1
 			done

@@ -12,6 +12,7 @@
 # For simplicity, we do not add more than 9 clients to a broker
 IP_ADDR="172.20.0."
 NETWORK_NAME="pumba_net"
+CLUSTER_TYPE="vernemq"
 # must be even number of clients for sake of simplicity
 TOTAL_SUBSCRIBERS=4
 NR_SUBSCRIBERS_PER_BROKER=2

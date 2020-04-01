@@ -1,0 +1,58 @@
+HiveMQ bind address was overridden by environment variable (value: 172.20.0.2)
+set bind address from container hostname to 172.20.0.2
+sed: cannot rename /opt/hivemq/conf/sedpgBGiL: Device or resource busy
+-------------------------------------------------------------------------
+
+                  _    _  _              __  __   ____
+                 | |  | |(_)            |  \/  | / __ \ 
+                 | |__| | _ __   __ ___ | \  / || |  | |
+                 |  __  || |\ \ / // _ \| |\/| || |  | |
+                 | |  | || | \ V /|  __/| |  | || |__| |
+                 |_|  |_||_|  \_/  \___||_|  |_| \___\_\
+
+-------------------------------------------------------------------------
+
+  HiveMQ Start Script for Linux/Unix v1.10
+
+-------------------------------------------------------------------------
+
+  HIVEMQ_HOME: /opt/hivemq
+
+  JAVA_OPTS: -XX:+UnlockExperimentalVMOptions -XX:+UseNUMA -Djava.net.preferIPv4Stack=true -noverify --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED -Djava.security.egd=file:/dev/./urandom -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9010 -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -XX:+CrashOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError
+
+  JAVA_VERSION: 11
+
+-------------------------------------------------------------------------
+
+2020-03-23 17:27:10,104 INFO  - Starting HiveMQ Enterprise Server
+2020-03-23 17:27:10,129 INFO  - HiveMQ version: 4.3.1
+2020-03-23 17:27:10,129 INFO  - HiveMQ home directory: /opt/hivemq
+2020-03-23 17:27:10,162 INFO  - Log Configuration was overridden by /opt/hivemq/conf/logback.xml
+2020-03-23 17:27:14,005 INFO  - This node's ID is WOXPi
+2020-03-23 17:27:14,008 INFO  - Clustering is enabled
+2020-03-23 17:27:47,221 INFO  - Created user preferences directory.
+2020-03-23 17:28:09,261 INFO  - No valid license file found. Using trial license, restricted to 25 connections.
+2020-03-23 17:28:16,992 INFO  - This node uses '2' CPU cores.
+2020-03-23 17:28:17,091 INFO  - Starting HiveMQ extension system.
+2020-03-23 17:28:17,881 WARN  - 
+################################################################################################################
+# This HiveMQ deployment is not secure! You are lacking Authentication and Authorization.                      #
+# Right now any MQTT client can connect to the broker with a full set of permissions.                          #
+# For production usage, add an appropriate security extension and remove the hivemq-allow-all extension.       #
+# You can download security extensions from the HiveMQ Marketplace (https://www.hivemq.com/extensions/).       #
+################################################################################################################
+2020-03-23 17:28:17,970 INFO  - Extension "Allow All Extension" version 1.0.0 started successfully.
+2020-03-23 17:28:19,997 INFO  - Using TCP cluster transport on address 172.20.0.2 and port 8000
+2020-03-23 17:28:20,172 INFO  - Using static cluster discovery
+2020-03-23 17:28:26,455 INFO  - Cluster nodes found by discovery: [Gg3wZ|3] (4) [Gg3wZ, NNoz8, O2Uhf, WOXPi].
+2020-03-23 17:28:26,863 INFO  - Cluster nodes found by discovery: [Gg3wZ|4] (5) [Gg3wZ, NNoz8, O2Uhf, WOXPi, fWQR5].
+2020-03-23 17:28:27,016 INFO  - Cluster size = 1, members : [Gg3wZ].
+2020-03-23 17:28:30,444 INFO  - Cluster size = 2, members : [O2Uhf, Gg3wZ].
+2020-03-23 17:28:34,992 INFO  - Cluster size = 3, members : [O2Uhf, NNoz8, Gg3wZ].
+2020-03-23 17:28:40,918 INFO  - Starting cluster join process. This may take a while. Please do not shut down HiveMQ.
+2020-03-23 17:28:40,934 INFO  - Cluster join process is still ongoing. Please do not shut down HiveMQ.
+2020-03-23 17:28:42,192 INFO  - Cluster size = 4, members : [O2Uhf, WOXPi, NNoz8, Gg3wZ].
+2020-03-23 17:28:42,393 INFO  - No user for HiveMQ Control Center configured. Starting with default user
+2020-03-23 17:28:42,401 INFO  - Starting HiveMQ Control Center on address 0.0.0.0 and port 8080
+2020-03-23 17:28:42,413 INFO  - Finished cluster join process successfully.
+2020-03-23 17:28:49,544 INFO  - Cluster size = 5, members : [O2Uhf, fWQR5, WOXPi, NNoz8, Gg3wZ].

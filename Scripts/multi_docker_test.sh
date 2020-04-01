@@ -2,7 +2,7 @@
 
 NETWORK_NAME="pumba_net"
 IP_ADDR="172.20.0."
-CLUSTER_TYPE="hivemq"
+CLUSTER_TYPE="vernemq"
 DEFAULT_INTERFACE="eth0"
 TOTAL_BROKERS=5
 DELAY=50
@@ -134,7 +134,7 @@ function RUN_VERNEMQ {
         -e DOCKER_VERNEMQ_ACCEPT_EULA=yes \
 	-e DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on \
         -e DOCKER_VERNEMQ_NODENAME="${IP_ADDR}${bkr}" \
-        -e DOCKER_VERNEMQ_DISCOVERY_NODE=172.20.0.2 \
+        -e DOCKER_VERNEMQ_DISCOVERY_NODE="${IP_ADDR}$FIST_BROKER_NUM" \
         francigjeci/vernemq-debian:latest
  	  done
 }
