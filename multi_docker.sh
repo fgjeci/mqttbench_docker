@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#input params type, delay, num broker
-
 NETWORK_NAME="pumba_net"
 IP_ADDR="172.20.0."
 CLUSTER_TYPE="rabbitmq"
@@ -113,7 +111,9 @@ function RUN_RABBITMQ {
         --hostname "$BRK_NAME" \
         --name "$BRK_NAME" \
         -p $((5670+bkr)):5672 \
+        -p $((1880+bkr)):1883 \
         -v "$PWD"/confiles/"$BRK_NAME".conf:/etc/rabbitmq/rabbitmq.conf \
+        -v "$PWD"/confiles/enabled_plugins:/etc/rabbitmq/enabled_plugins \
         -e RABBITMQ_ERLANG_COOKIE=$(cat "$PWD"/.erlang.cookie) \
         -e RABBITMQ_NODENAME=docker@"$BRK_NAME" \
         flipperthedog/rabbitmq:ping
@@ -134,7 +134,7 @@ function RUN_VERNEMQ {
         --name "$BRK_NAME" \
         -p $((5680+bkr)):5684 \
         -e DOCKER_VERNEMQ_ACCEPT_EULA=yes \
-	-e DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on \
+	      -e DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on \
         -e DOCKER_VERNEMQ_NODENAME="${IP_ADDR}${bkr}" \
         -e DOCKER_VERNEMQ_DISCOVERY_NODE=172.20.0.2 \
         francigjeci/vernemq-debian:latest
@@ -166,6 +166,44 @@ function RUN_HIVEMQ {
 
 
 ###### MAIN ######
+
+#input params type, delay, num broker
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+
+    -t|--cluster-type)
+    CLUSTER_TYPE="$2"
+    shift
+    shift
+    ;;
+
+    -d|--delay)
+    DELAY="$2"
+    shift
+    shift
+    ;;
+
+    -n|--num-brokers)
+    TOTAL_BROKERS="$2"
+    shift
+    shift
+    ;;
+
+    *)
+    POSITIONAL+=("$1")
+    shift
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" 
+
+
+echo "$CLUSTER_TYPE $DELAY $TOTAL_BROKERS"
+
 echo "Cleaning up the environment..."
 docker stop $(docker ps -a -q)
 docker rm $(docker ps -a -q)
