@@ -26,23 +26,29 @@ LAST_BROKER_NUM=$((FIST_BROKER_NUM + NR_BROKERS-1))
 # For the publishers we can also make them run in the FOREGROUND to log their debug, as they are temporary and after they kill themself automatically
 # This strategy doesn't work with subscribers, since they remain active, so what can be done in that case is to fetch the debug stream after we have finished running the network, just before killing the running processes.
 
-for broker in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
-	do
-		for sub in $(seq 1 $NR_SUBSCRIBERS_PER_BROKER)
-			do
-				echo "Subscriber $IP_ADDR$broker$sub subscribing to broker $IP_ADDR$broker"
-				docker run -d --rm -it --network=$NETWORK_NAME \
-						--ip="$IP_ADDR$broker$sub" \
-						--name="sub_$broker$sub" \
-						piersfinlayson/mosquitto-clients mosquitto_sub \
-						-h "$IP_ADDR$broker"  \
-						-p 1883 \
-						-t test \
-						-d | xargs -d$'\n' -L1 echo ""
-				# Sleeping 5 seconds to permit all message exchange occur
-				sleep 5
-			done
-	done
+broker=$FIST_BROKER_NUM
+sub=1
+
+
+# echo "Subscriber $IP_ADDR$broker$sub subscribing to broker $IP_ADDR$broker"
+# docker run --rm -ti python:3.8.2-slim 
+#docker run --rm -ti --name 'pymqtt' francigjeci/pymqtt-clients:3.8.2 \ 
+#				-msg 'safda'
+
+python_file=/home/franci/Documents/Docker_Files/Python/'Network Analysis'/publish_single.py
+# python3 py_mqtt_clients.py --pub-clients=2 --sub-clients=2 --pub-count=1 --sub-count=1 --topic='test' --msg='hello' --hostname='172.20.0.2'
+
+
+#docker run -d -it --rm --name "pymqtt" \
+#		-v "$python_file":/home/py_mqtt_clients.py \
+#		-v /var/run/docker.sock:/var/run/docker.sock \ 
+#		francigjeci/mqtt-python3.8.2:latest bin/bash
+
+docker run -it --rm --name "pymqtt" \
+		-v "$python_file":/home/script.py \
+		francigjeci/mqtt-py:3.8.2
+# Sleeping 5 seconds to permit all message exchange occur
+
 
 #docker run --rm -ti --network=$NETWORK_NAME \
 #						--ip="$IP_ADDR$broker$sub" \

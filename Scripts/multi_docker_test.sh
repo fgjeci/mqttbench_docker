@@ -4,9 +4,11 @@ NETWORK_NAME="pumba_net"
 IP_ADDR="172.20.0."
 CLUSTER_TYPE="vernemq"
 DEFAULT_INTERFACE="eth0"
+NETWORK_DRIVER="bridge"
+#"macvlan"
 TOTAL_BROKERS=5
 DELAY=50
-DURATION_SIM="15m"
+DURATION_SIM="2h"
 PWD=$(pwd)
 FIST_BROKER_NUM=2
 LAST_BROKER_NUM=$((TOTAL_BROKERS+FIST_BROKER_NUM-1))
@@ -123,21 +125,25 @@ function RUN_RABBITMQ {
 
 ###### VERNEMQ ######
 function RUN_VERNEMQ {
-  for bkr in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
-    do
-      BRK_NAME="${CLUSTER_TYPE}_${bkr}"
+for bkr in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
+do
+BRK_NAME="${CLUSTER_TYPE}_${bkr}"
 
-      docker run -d --network=$NETWORK_NAME \
-        --hostname "$BRK_NAME" \
-        --name "$BRK_NAME" \
-        -p $((5680+bkr)):5684 \
-        -e DOCKER_VERNEMQ_ACCEPT_EULA=yes \
+docker run -d --network="$NETWORK_NAME" \
+	--hostname="$BRK_NAME" \
+	--name "$BRK_NAME" \
+	--ip="${IP_ADDR}${bkr}" \
+	-e DOCKER_VERNEMQ_ACCEPT_EULA=yes \
 	-e DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on \
-        -e DOCKER_VERNEMQ_NODENAME="${IP_ADDR}${bkr}" \
-        -e DOCKER_VERNEMQ_DISCOVERY_NODE="${IP_ADDR}$FIST_BROKER_NUM" \
-        francigjeci/vernemq-debian:latest
- 	  done
+	-e DOCKER_VERNEMQ_NODENAME="${IP_ADDR}${bkr}" \
+	-e DOCKER_VERNEMQ_DISCOVERY_NODE="${IP_ADDR}${FIST_BROKER_NUM}" \
+	francigjeci/vernemq-debian:latest
+# -p $((5680+bkr)):5684 \ 	  
+#-e DOCKER_VERNEMQ_ACCEPT_EULA=yes \
+#-e DOCKER_VERNEMQ_ALLOW_ANONYMOUS=on \
+done
 }
+
 ###### END OF VERNEMQ ######
 
 ###### HIVEMQ ######
@@ -153,10 +159,10 @@ function RUN_HIVEMQ {
 					--hostname="$BRK_NAME" \
 					--name="$BRK_NAME" \
 					--ip="${IP_ADDR}${bkr}" \
-					-p $((5690+bkr)):5692 \
 					-v "$output_config_file":/opt/hivemq/conf/config.xml \
 					-e HIVEMQ_BIND_ADDRESS="${IP_ADDR}${bkr}" \
 					francigjeci/hivemq:dns-image
+# -p $((5690+bkr)):5692 \
 		done
 }
 ###### END OF VERNEMQ ######
@@ -168,14 +174,14 @@ echo "Cleaning up the environment..."
 docker stop $(docker ps -a -q)
 docker rm $(docker ps -a -q)
 
-docker network rm $NETWORK_NAME
+docker network rm "$NETWORK_NAME"
 
 echo "Creating a new network..."
 docker network create \
-		--driver=macvlan \
+		--driver="$NETWORK_DRIVER" \
 		--subnet="$IP_ADDR"0/16 \
 		--ip-range="$IP_ADDR"0/24 \
-		$NETWORK_NAME
+		"$NETWORK_NAME"
 
 # --driver=bridge \ -> using bridge as network driver introduces many TCP retransmissions and reduced significantly the network throughput
 # Thus, we test the network with the macvlan driver to see its performace
@@ -206,16 +212,20 @@ case $CLUSTER_TYPE in
 esac
 
 
-
 echo "Slowing down the network..."
-sleep 20
+sleep 25
 
-docker run -d --rm --network="$NETWORK_NAME" \
+#####******* It's important to give the adequate parameters to pumba image, i.e you can give at least the delay parameter for the image to start successfully
+
+docker run -d -it --rm --network="$NETWORK_NAME" \
+		--name="pumba" \
 		-v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
-		--interface $DEFAULT_INTERFACE \
-		$(docker ps --format "{{.Names}}"  | tr '\r\n' ' ')
+		--interface "$DEFAULT_INTERFACE" \
+		--duration "$DURATION_SIM" \
+		delay --time "$DELAY" \
+		$(docker ps --format "{{.Names}}" | tr '\r\n' ' ')
 
-
-# --duration $DURATION_SIM \
-# --time $DELAY \
-#--name pumba \
+#--network="$NETWORK_NAME" \
+#$dockers_name
+#--interface "$DEFAULT_INTERFACE" \
+#--name pumba \3

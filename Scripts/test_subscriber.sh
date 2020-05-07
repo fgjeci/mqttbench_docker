@@ -26,23 +26,21 @@ LAST_BROKER_NUM=$((FIST_BROKER_NUM + NR_BROKERS-1))
 # For the publishers we can also make them run in the FOREGROUND to log their debug, as they are temporary and after they kill themself automatically
 # This strategy doesn't work with subscribers, since they remain active, so what can be done in that case is to fetch the debug stream after we have finished running the network, just before killing the running processes.
 
-for broker in $(seq $FIST_BROKER_NUM $LAST_BROKER_NUM)
-	do
-		for sub in $(seq 1 $NR_SUBSCRIBERS_PER_BROKER)
-			do
-				echo "Subscriber $IP_ADDR$broker$sub subscribing to broker $IP_ADDR$broker"
-				docker run -d --rm -it --network=$NETWORK_NAME \
-						--ip="$IP_ADDR$broker$sub" \
-						--name="sub_$broker$sub" \
-						piersfinlayson/mosquitto-clients mosquitto_sub \
-						-h "$IP_ADDR$broker"  \
-						-p 1883 \
-						-t test \
-						-d | xargs -d$'\n' -L1 echo ""
-				# Sleeping 5 seconds to permit all message exchange occur
-				sleep 5
-			done
-	done
+broker=$FIST_BROKER_NUM
+sub=1
+
+
+echo "Subscriber $IP_ADDR$broker$sub subscribing to broker $IP_ADDR$broker"
+docker run --rm -it --network=$NETWORK_NAME \
+		--ip="$IP_ADDR$broker$sub" \
+		--name="sub_$broker$sub" \
+		piersfinlayson/mosquitto-clients mosquitto_sub \
+		-h "$IP_ADDR$broker"  \
+		-p 1883 \
+		-t 'test' \
+		-d | xargs -d$'\n' -L1 echo "$IP_ADDR$broker$sub -"
+# Sleeping 5 seconds to permit all message exchange occur
+
 
 #docker run --rm -ti --network=$NETWORK_NAME \
 #						--ip="$IP_ADDR$broker$sub" \
