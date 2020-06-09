@@ -1,0 +1,16 @@
+{
+  "clusters": [
+    {
+      "topic":  ["test"],
+      "pub_clients":  5,
+      "sub_clients": 0
+    },
+    {
+      "topic": ["test"],
+      "pub_clients": 5,
+      "sub_clients": 0
+    }
+  ],
+  "default": "test",
+  "all": "test"
+}
