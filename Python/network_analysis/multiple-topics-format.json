@@ -1,16 +1,15 @@
 {
   "clusters": [
     {
-      "topics":  ["test"],
-      "pubs":  0,
-      "subs": 1
+      "topic":  ["test"],
+      "pub_clients": 0,
+      "sub_clients": 5
     },
     {
-      "topics": ["test"],
-      "pubs": 0,
-      "subs": 1
+      "topic": ["test"],
+      "pub_clients": 0,
+      "sub_clients": 5
     }
   ],
-  "default": "test",
-  "all": "test"
+  "default": "test"
 }

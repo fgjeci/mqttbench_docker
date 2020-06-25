@@ -1,0 +1,1 @@
+{"clusters": [{"topic": ["test"], "pub_clients": 0, "sub_clients": 5}, {"topic": ["test"], "pub_clients": 0, "sub_clients": 5}], "default": "test", "all": "test"}

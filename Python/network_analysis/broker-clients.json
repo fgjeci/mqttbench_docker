@@ -1,0 +1,26 @@
+{
+  "number": 2,
+  "description": "star",
+  "containers": [
+    {
+      "hostname": "172.20.0.3",
+      "topic": "test",
+      "sub_clients": 200,
+      "sub_count": 10,
+      "pub_clients": 0,
+      "pub_count": 0
+    }
+  ],
+  "default": {
+    "ip_range": {
+      "start": "172.20.0.4",
+      "stop": "172.20.0.4"
+    },
+    "topic": "../multiple-topics-format.json",
+    "sub_clients": 200,
+    "sub_count": 10,
+    "pub_clients": 0,
+    "pub_count": 0
+  },
+  "all": {}
+}

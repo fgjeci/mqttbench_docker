@@ -172,7 +172,7 @@ function RUN_HIVEMQ {
 ###### MAIN ######
 echo "Cleaning up the environment..."
 docker stop $(docker ps -a -q)
-docker rm $(docker ps -a -q)
+docker rm -f $(docker ps -a -q)
 
 docker network rm "$NETWORK_NAME"
 
@@ -213,7 +213,7 @@ esac
 
 
 echo "Slowing down the network..."
-sleep 25
+sleep 10
 
 #####******* It's important to give the adequate parameters to pumba image, i.e you can give at least the delay parameter for the image to start successfully
 
@@ -221,11 +221,11 @@ docker run -d -it --rm --network="$NETWORK_NAME" \
 		--name="pumba" \
 		-v /var/run/docker.sock:/var/run/docker.sock gaiaadm/pumba netem \
 		--interface "$DEFAULT_INTERFACE" \
-		--duration "$DURATION_SIM" \
 		delay --time "$DELAY" \
 		$(docker ps --format "{{.Names}}" | tr '\r\n' ' ')
 
 #--network="$NETWORK_NAME" \
 #$dockers_name
+#--duration "$DURATION_SIM" \
 #--interface "$DEFAULT_INTERFACE" \
 #--name pumba \3

@@ -525,7 +525,7 @@ class Sub(MQTTClient):
         return _json_list_1
 
     def _intermessage_timeout(self):
-        # print('Entered in the intermessage function')
+        print('Entered in the intermessage function')
         self.__finished = True
 
     def on_connect(self, client, userdata, flags, rc):
@@ -888,10 +888,10 @@ def main(host=None):
     cl_param = ClientParameters(opts, host)
 
     # Log file
-    log_file = initialize_log(cl_param.hostname, dest_path='/home/logs'
+    log_file = initialize_log(cl_param.hostname, dest_path='/home' # /logs
                               , prefix=cl_param.description)
 
-    # start = time.time()
+    start = time.time()
 
     # the multiple-topics
     _multiple_topics_cl = None
