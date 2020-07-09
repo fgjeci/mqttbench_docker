@@ -620,7 +620,8 @@ def map_command_parameters_to_environmental() -> dict:
 
 
 def create_container(docker_client, args, image: str = IMAGE_NAME, network: str = 'pumba_net', volumes: list = None,
-                     working_dir='/home', detach=True, tty=True, stdin_open=True, **kwargs):
+                     working_dir='/home', detach=True, tty=True, stdin_open=True, hostname=None,
+                     name=None, **kwargs):
     _env_vars = {}
     _map_keys_cmd_environmental_parameters = map_command_parameters_to_environmental()
     for cmd_par, env_par in _map_keys_cmd_environmental_parameters.items():
@@ -633,7 +634,7 @@ def create_container(docker_client, args, image: str = IMAGE_NAME, network: str 
                 pass
             except TypeError:
                 pass
-    print(f'Environmental parameters passed to container {kwargs["name"]}')
+    print(f'Environmental parameters passed to container {name}') # kwargs["name"]
     print(_env_vars)
     return docker_client.containers.run(image,
                                         detach=detach,
@@ -646,6 +647,8 @@ def create_container(docker_client, args, image: str = IMAGE_NAME, network: str 
                                         volumes=volumes,
                                         environment=_env_vars,
                                         network=network,  # the network this container must be connected
+                                        hostname=hostname,
+                                        name=name,
                                         **kwargs
                                         )
 
