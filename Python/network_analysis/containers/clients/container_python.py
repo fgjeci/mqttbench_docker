@@ -601,8 +601,8 @@ class Sub(MQTTClient):
 
             print(f'Stopping client {self.client_id} on message')
             self.client.loop_stop()
-            print(f'Terminating process on message in client {self.client_id} ')
-            self.terminate()
+            # print(f'Terminating process on message in client {self.client_id} ')
+            # self.terminate()
 
 
     def run(self):
