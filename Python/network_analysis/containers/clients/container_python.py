@@ -605,8 +605,9 @@ class Sub(MQTTClient):
             self.client.loop_stop()
             print(f'Client {self.client_id} stoped')
             try:
+                print('Terminating process {self.client_id}')
                 self.terminate()
-                print(f'Terminating process on message in client {self.client_id} ')
+                print(f'Process terminatted {self.client_id}')
             except AttributeError:
                 pass
             
