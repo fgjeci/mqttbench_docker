@@ -1,3 +1,4 @@
+import tarfile
 import docker
 import os
 import time
@@ -8,6 +9,8 @@ import ipaddress
 import netaddr
 import copy
 import pytz
+import subprocess
+import multiprocessing
 
 # Local packages
 import Exceptions
@@ -471,24 +474,74 @@ def validate_count_clients(nr_clients: int, nr_count_per_client: int, container_
         exit(1)
 
 
-def copy_from(container_name, docker_src_file: str, destination: str, dst_file_prefix: str = None) -> str:
-    if not os.path.exists(destination):
-        os.mkdir(destination)
-    if not destination.endswith('/'):
-        destination = destination + '/'
+def get_archive_from_container(container_name, docker_src_file: str):
     container = docker.from_env().containers.get(container_name)
     # Get the content
-    bits, stat = container.get_archive(docker_src_file)
+    # _result = container.exec_run('ls /home/logs')
+    # _filename = _result.output.decode('utf-8')
+    # print(_filename)
+    bits, stat = container.get_archive(os.path.join(docker_src_file))
+    return bits, stat
+
+
+def create_tar_file_destination(destination: str, dst_file_prefix: str = None):
+    if not os.path.exists(destination):
+        os.mkdir(destination)
     if dst_file_prefix is None:
         dst_file_prefix = 'output'
     index = 0
-    while os.path.exists(os.path.join(destination + (dst_file_prefix + '(%d).tar' % index))):
+    _dest = os.path.join(destination, (dst_file_prefix + '.tar'))
+    while os.path.exists(_dest):
         index += 1
-    with open(os.path.join(destination + (dst_file_prefix + '(%d).tar' % index)), 'wb') as f:
-        for chunk in bits:
-            f.write(chunk)
-            f.close()
-    return os.path.join(destination + dst_file_prefix + ('(%d).tar' % index))
+        _dest = os.path.join(destination, (dst_file_prefix + '(%d).tar' % index))
+    return _dest
+
+
+def collect_containers_logs(containers, docker_src_file: str, destination: str, dst_file_prefix: str = None) -> str:
+    file_destination = create_tar_file_destination(destination, dst_file_prefix)
+    docker_src_directory_prefix = 'logs'
+
+    # removing all available csv file
+    for file_path in os.listdir(os.path.join(os.getcwd(), docker_src_directory_prefix)):
+        if file_path.endswith('.csv') and file_path.find('_log_') != -1:
+            os.remove(os.path.join(os.getcwd(), docker_src_directory_prefix, file_path))
+
+    final_tar = tarfile.open(file_destination, 'w')
+    for ind, container in enumerate(containers):
+        file_destination_cont = create_tar_file_destination(destination, dst_file_prefix + '_' + container.name)
+
+        with open(file_destination_cont, 'wb') as f:
+            docker_src_file_final = os.path.join(docker_src_file, docker_src_directory_prefix)
+            print(f'Get archive {docker_src_file_final} from container {container.name}')
+            bits, stat = get_archive_from_container(container.name, docker_src_file_final)
+            for chunk in bits:
+                f.write(chunk)
+
+        # docker_src_file_final = os.path.join(docker_src_file, docker_src_directory_prefix)
+        # print(f'Get archive {docker_src_file_final} from container {container.name}')
+        # bits, stat = get_archive_from_container(container.name, docker_src_file_final)
+        # for d in bits:
+        #     print(d.decode('utf-8'))
+        #     pw_tar = tarfile.TarFile(fileobj=io.StringIO(d.decode('utf-8')))
+        #     pw_tar.extractall()  # "extract_to/"
+        #     pw_tar.close()
+
+        # Extract the csv file in the tar
+        tar = tarfile.open(file_destination_cont)
+        tar.extractall()
+        tar.close()
+
+        # remove the temporary tar file
+        os.remove(file_destination_cont)
+    # After finishing the extraction, we put then in the final tar
+    for file_path in os.listdir(os.path.join(os.getcwd(), docker_src_directory_prefix)):
+        if file_path.endswith('.csv') and file_path.find('_log_') != -1:
+            _complete_file_path = os.path.join(docker_src_directory_prefix, file_path)
+            final_tar.add(_complete_file_path)
+            os.remove(_complete_file_path)
+    final_tar.close()
+
+    return file_destination
 
 
 def get_args(args: argparse.Namespace) -> str:
@@ -532,7 +585,8 @@ def map_command_parameters_to_environmental() -> dict:
 
 
 def create_container(docker_client, args, image: str = IMAGE_NAME, network: str = 'pumba_net', volumes: list = None,
-                     working_dir='/home', detach=True, tty=True, stdin_open=True, **kwargs):
+                     working_dir='/home', detach=True, tty=True, stdin_open=True, hostname=None,
+                     name=None, **kwargs):
     _env_vars = {}
     _map_keys_cmd_environmental_parameters = map_command_parameters_to_environmental()
     for cmd_par, env_par in _map_keys_cmd_environmental_parameters.items():
@@ -545,7 +599,7 @@ def create_container(docker_client, args, image: str = IMAGE_NAME, network: str 
                 pass
             except TypeError:
                 pass
-    print('Environmental parameters to be passed to container')
+    print(f'Environmental parameters passed to container {name}')
     print(_env_vars)
     return docker_client.containers.run(image,
                                         detach=detach,
@@ -558,6 +612,8 @@ def create_container(docker_client, args, image: str = IMAGE_NAME, network: str 
                                         volumes=volumes,
                                         environment=_env_vars,
                                         network=network,  # the network this container must be connected
+                                        hostname=hostname,
+                                        name=name,
                                         **kwargs
                                         )
 
@@ -586,12 +642,12 @@ def create_containers_from_json(json_config, docker_client):
                 json.dump(_topic, json_file)
                 _container_topic = _destination + '/config' + str(_ind) + '.json'
         elif isinstance(_topic, (list, tuple)):
-            _container_topic = list_to_string(_topic)
+            _container_topic = _topic
         elif isinstance(_topic, str):
             _container_topic = _topic
         else:
             raise Exceptions.UnexpectedType(Keywords.TOPICS)
-        if _container_topic.endswith('.json'):
+        if isinstance(_container_topic, str) and _container_topic.endswith('.json'):
             if not os.path.exists(_container_topic):
                 _container_topic_full_path = os.getcwd() + '/' + _container_topic
                 if not os.path.exists(_container_topic_full_path):
@@ -612,55 +668,71 @@ def create_containers_from_json(json_config, docker_client):
 
 
 def kill_containers_with_prefix(docker_client, prefix: str = None) -> None:
-    print("Killing available containers")
-    for container in docker_client.containers.list(all=True):
-        if prefix is not None:
-            if prefix in container.name:
+    def kill_containers():
+        for container in docker_client.containers.list(all=True):
+            if prefix is not None:
+                if prefix in container.name:
+                    container.stop()
+                    container.remove()
+                    print(f"Container {container.name} killed")
+            else:
                 container.stop()
                 container.remove()
                 print(f"Container {container.name} killed")
-        else:
-            container.stop()
-            container.remove()
-            print(f"Container {container.name} killed")
+
+    print("Killing available containers")
+    nr_tries = 0
+    for _try in range(0, 2):
+        try:
+            nr_tries = nr_tries + 1
+            kill_containers()
+            break
+        except:
+            print('An error occurred stopping the containers')
+            print(f'Retrying ({nr_tries} times)...')
+    if nr_tries == 2:
+        kill_containers()
+    print("All containers are cleared")
 
 
-def arg_parse():
+def arg_parse(hostname: str = None, port: int = None, topic=None, sub_clients: int = 1, containers: int = 5,
+              sub_count: int = 1, qos: int = 0, username: str = None, password: str = None, sub_timeout: int = 60,
+              cacert=None, multiple_topics: str = None, description: str = None, json_config: str = None):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-H', '--hostname', required=False)  # , default="mqtt.eclipse.org"
-    parser.add_argument('-P', '--port', required=False, type=int, default=None,
+    parser.add_argument('-H', '--hostname', required=False, default=hostname)
+    parser.add_argument('-P', '--port', required=False, type=int, default=port,
                         help='Defaults to 8883 for TLS or 1883 for non-TLS')
-    parser.add_argument('-t', '--topic', required=False, default=None)  # default="paho/test/opts"
-    parser.add_argument('--sub-clients', type=int, dest='sub_clients', default=1,
+    parser.add_argument('-t', '--topic', required=False, default=topic)
+    parser.add_argument('--sub-clients', type=int, dest='sub_clients', default=sub_clients,
                         help='The number of subscriber client workers to use. '
                              'By default 1 is used')
-    parser.add_argument('--containers', type=int, default=5,
+    parser.add_argument('--containers', type=int, default=containers,
                         help='The number of containers')
-    parser.add_argument('--sub-count', type=int, dest='sub_count', default=1,
+    parser.add_argument('--sub-count', type=int, dest='sub_count', default=sub_count,
                         help='The number of messages each subscriber client '
                              'will wait to receive before completing. The '
                              'default count is 1.')
-    parser.add_argument('-q', '--qos', required=False, type=int, default=0, choices=[0, 1, 2])
+    parser.add_argument('-q', '--qos', required=False, type=int, default=qos, choices=[0, 1, 2])
     # parser.add_argument('-c', '--clientid', required=False, default=None)
-    parser.add_argument('-u', '--username', required=False, default=None)
+    parser.add_argument('-u', '--username', required=False, default=username)
     # parser.add_argument('-d', '--disable-clean-session', action='store_true',
     #                     help="disable 'clean session' (sub + msgs not cleared when client disconnects)")
-    parser.add_argument('-p', '--password', required=False, default=None)
+    parser.add_argument('-p', '--password', required=False, default=password)
     # parser.add_argument('-k', '--keepalive', required=False, type=int, default=60)
-    parser.add_argument('--sub-timeout', type=int, dest='sub_timeout', required=False, default=60,
+    parser.add_argument('--sub-timeout', type=int, dest='sub_timeout', required=False, default=sub_timeout,
                         help='The amount of time, in seconds, a subscriber '
                              'client will wait for messages. By default this '
                              'is 60.')
-    parser.add_argument('-F', '--cacert', required=False, default=None)
-    parser.add_argument('--multiple-topics', required=False, default=None, type=str,  # type=MultipleTopics(parser),
+    parser.add_argument('-F', '--cacert', required=False, default=cacert)
+    parser.add_argument('--multiple-topics', required=False, default=multiple_topics, type=str,
                         help='The structure when clients needs to publish to multiple topics')
-    parser.add_argument('--description', type=str, default=None,
+    parser.add_argument('--description', type=str, default=description,
                         help='A description of cluster topology. '
                              'Shall be used to set the name of log files of type: '
                              '*description*_*sub_1*')
 
-    parser.add_argument('--json-config', type=str, default=None,
+    parser.add_argument('--json-config', type=str, default=json_config,
                         help='The config json file')
 
     # parser.add_argument('-s', '--use-tls', action='store_true')
@@ -672,71 +744,105 @@ def arg_parse():
     return parser.parse_args()
 
 
-def main():
-    pwd = os.getcwd()
+class Subscribers(multiprocessing.Process):
+    def __init__(self, **kwargs):
+        super(Subscribers, self).__init__()
+        self.__pwd = os.getcwd()
+        self.__args = arg_parse(**kwargs)
+        self.__docker_client = docker.from_env()
+        self.__containers = []
+        self.__ready_to_receive_msgs = multiprocessing.Value('i', False, lock=True)
 
-    parser = arg_parse()
-    args = parser
 
-    print('Args')
-    print(args)
 
-    docker_client = docker.from_env()
+    @property
+    def ready_to_receive_msgs(self):
+        return self.__ready_to_receive_msgs.value
 
-    # kill the previous created containers
-    kill_containers_with_prefix(docker_client, prefix='sub')
+    def run(self):
+        # kill the previous created containers
+        kill_containers_with_prefix(self.__docker_client, prefix='sub')
 
-    container_volumes = [pwd + '/clients/container_python.py:/home/script.py']
-    json_config = getattr(args, 'json_config')
-    # string or list
-    containers = []
-    if json_config:
-        containers = create_containers_from_json(json_config, docker_client)
-    else:
-        nr_containers = getattr(args, Keywords.CONTAINERS)
-        topics_json_file = getattr(args, Keywords.MULTIPLE_TOPICS)
-        _args = copy.deepcopy(args)
-        if topics_json_file is not None:
-            destination_json_file = PATH_MULTIPLE_TOPICS
-            _args[Keywords.MULTIPLE_TOPICS] = destination_json_file
-            if Keywords.TOPICS in _args.keys():
-                del _args[Keywords.TOPICS]
-            container_volumes.append(os.path.abspath(topics_json_file) + ':' + destination_json_file)
+        container_volumes = [self.__pwd + '/clients/container_python.py:/home/script.py']
+        json_config = getattr(self.__args, 'json_config')
+        # string or list
+        if json_config:
+            self.__containers = create_containers_from_json(json_config, self.__docker_client)
+        else:
+            nr_containers = getattr(self.__args, Keywords.CONTAINERS)
+            topics_json_file = getattr(self.__args, Keywords.MULTIPLE_TOPICS)
+            _args = copy.deepcopy(self.__args)
+            if topics_json_file is not None:
+                destination_json_file = PATH_MULTIPLE_TOPICS
+                _args[Keywords.MULTIPLE_TOPICS] = destination_json_file
+                if Keywords.TOPICS in _args.keys():
+                    del _args[Keywords.TOPICS]
+                container_volumes.append(os.path.abspath(topics_json_file) + ':' + destination_json_file)
 
-        print("Creating new containers")
-        for my_cont in range(nr_containers):
-            container_name = f"{SUB_PREFIX}_{my_cont}"
-            _cont = create_container(docker_client, _args, volumes=container_volumes, name=container_name,
-                                     hostname=container_name)
-            print(f"Container {container_name} created")
-            containers.append(_cont)
+            print("Creating new containers")
+            for my_cont in range(nr_containers):
+                container_name = f"{SUB_PREFIX}_{my_cont}"
+                _cont = create_container(self.__docker_client, _args, volumes=container_volumes, name=container_name,
+                                         hostname=container_name)
+                print(f"Container {container_name} created")
+                self.__containers.append(_cont)
 
-    print('Starting containers')
-    time.sleep(2)
-    for container in containers:
-        if container.status == 'created':
-            print(f'Container {container.name} started')
-            print(f'Running python script in container {container.name}')
+        print('Starting containers')
+        time.sleep(2)
+        for container in self.__containers:
+            if container.status == 'created':
+                print(f'Container {container.name} started')
+                print(f'Running python script in container {container.name}')
 
-    time.sleep(20)
-    print('Storing the results')
-    for container in containers:
+        # At this point, once the python scripts are running, subscribers are ready to receive messages
+        # self.__ready_to_receive_msgs = True
+        self.__ready_to_receive_msgs = multiprocessing.Value('i', True, lock=True)
+        # print('Now subs are ready to receive msgs')
+        # print(self.ready_to_receive_msgs)
+
+        container_finished = [False] * len(self.__containers)
+        print('Analysing printed logs')
+        while True:
+            for ind, container in enumerate(self.__containers):
+                str_to_capture = f'{container.name} finished its operation'
+                process = subprocess.Popen(f'docker logs {container.name}', stdout=subprocess.PIPE, stderr=None,
+                                           shell=True, encoding="utf8")
+                # Launch the shell command:
+                output = process.communicate()[0]
+                if str_to_capture in output:
+                    print(f'Container {container.name} finished its work')
+                    container_finished[ind] = True
+            print('Status of containers')
+            print(container_finished)
+            if all(container_finished):
+                print('All containers have finished their work')
+                break
+            time.sleep(2)
+
+        print('Collecting the results from containers')
         _date = datetime.datetime.now(tz=TIMEZONE).strftime('%m_%d_%H_%M') + '_'
-        copy_from(container.name, docker_src_file='/home/logs', destination=pwd + '/logs',
-                  dst_file_prefix=_date + '_' + container.name + '_' + 'star')
+        _log_tar_file = collect_containers_logs(self.__containers, docker_src_file='/home/',
+                                                destination=self.__pwd + '/logs', dst_file_prefix=_date + '_' + 'star')
 
-    print('Printing containers Logs')
-    for container in containers:
-        _cont_output = container.logs()
-        print(_cont_output.decode("utf-8"))
+        print('Printing containers log')
+        for container in self.__containers:
+            _cont_output = container.logs()
+            print(_cont_output.decode("utf-8"))
 
-    print('Printing containers stats')
-    for container in containers:
-        print(container.stats(stream=False))
+        print('Printing containers stats')
+        for container in self.__containers:
+            print(container.stats(stream=False))
 
-    print('Stopping and killing the containers')
-    kill_containers_with_prefix(docker_client, SUB_PREFIX)
+        print('Stopping and killing the containers')
+        kill_containers_with_prefix(self.__docker_client, SUB_PREFIX)
+
+        # final_tar = tarfile.open(_log_tar_file, 'a')
+        # _extra_file = os.path.join(os.getcwd(), 'local_publisher.py')
+        # print(_extra_file)
+        # final_tar.add('local_publisher.py')
+        # final_tar.close()
 
 
 if __name__ == '__main__':
-    main()
+    subs = Subscribers()
+    subs.start()

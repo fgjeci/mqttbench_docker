@@ -6,6 +6,7 @@ import json
 import copy
 import ipaddress
 import netaddr
+import multiprocessing
 
 import Exceptions
 
@@ -619,7 +620,8 @@ def map_command_parameters_to_environmental() -> dict:
 
 
 def create_container(docker_client, args, image: str = IMAGE_NAME, network: str = 'pumba_net', volumes: list = None,
-                     working_dir='/home', detach=True, tty=True, stdin_open=True, **kwargs):
+                     working_dir='/home', detach=True, tty=True, stdin_open=True, hostname=None,
+                     name=None, **kwargs):
     _env_vars = {}
     _map_keys_cmd_environmental_parameters = map_command_parameters_to_environmental()
     for cmd_par, env_par in _map_keys_cmd_environmental_parameters.items():
@@ -632,7 +634,7 @@ def create_container(docker_client, args, image: str = IMAGE_NAME, network: str 
                 pass
             except TypeError:
                 pass
-    print('Environmental parameters to be passed to container')
+    print(f'Environmental parameters passed to container {name}') # kwargs["name"]
     print(_env_vars)
     return docker_client.containers.run(image,
                                         detach=detach,
@@ -645,6 +647,8 @@ def create_container(docker_client, args, image: str = IMAGE_NAME, network: str 
                                         volumes=volumes,
                                         environment=_env_vars,
                                         network=network,  # the network this container must be connected
+                                        hostname=hostname,
+                                        name=name,
                                         **kwargs
                                         )
 
@@ -715,48 +719,51 @@ def kill_containers_with_prefix(docker_client, prefix: str = None) -> None:
             print(f"Container {container.name} killed")
 
 
-def arg_parse():
+def arg_parse(hostname: str = None, port: int = None, topic=None, pub_clients: int = 1, containers: int = 5,
+              pub_count: int = 1, qos: int = 0, username: str = None, password: str = None, pub_timeout: int = 60,
+              cacert=None, multiple_topics: str = None, description: str = None, json_config: str = None,
+              msg_size=1024):
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-H', '--hostname', required=False)  # , default="mqtt.eclipse.org"
-    parser.add_argument('-P', '--port', required=False, type=int, default=None,
+    parser.add_argument('-H', '--hostname', required=False, default=hostname)  # , default="mqtt.eclipse.org"
+    parser.add_argument('-P', '--port', required=False, type=int, default=port,
                         help='Defaults to 8883 for TLS or 1883 for non-TLS')
-    parser.add_argument('-t', '--topic', required=False, default=None)  # default="paho/test/opts"
-    parser.add_argument('-T', '--multiple-topics', required=False, default=None,  # type=MultipleTopics(parser),
+    parser.add_argument('-t', '--topic', required=False, default=topic)  # default="paho/test/opts"
+    parser.add_argument('-T', '--multiple-topics', required=False, default=multiple_topics,  # type=MultipleTopics(parser),
                         help='The structure when clients needs to publish to multiple topics')
-    parser.add_argument('--pub-clients', type=int, dest='pub_clients',  # default=1,
+    parser.add_argument('--pub-clients', type=int, dest='pub_clients', default=pub_clients,
                         help='The number of publisher client workers to use. '
                              'By default 1 are used.')
-    parser.add_argument('--pub-count', type=int, dest='pub_count',  # default=1,
+    parser.add_argument('--pub-count', type=int, dest='pub_count', default=pub_count,
                         help='The number of messages each publisher client '
                              'will publish for completing. The default count '
                              'is 1')
-    parser.add_argument('--containers', type=int, default=5,
+    parser.add_argument('--containers', type=int, default=containers,
                         help='The number of containers')
-    parser.add_argument('-q', '--qos', required=False, type=int, default=0, choices=[0, 1, 2])
-    parser.add_argument('--msg-size', dest='msg_size', type=MessageValidation(MSG_SIZE_LIMIT),
+    parser.add_argument('-q', '--qos', required=False, type=int, default=qos, choices=[0, 1, 2])
+    parser.add_argument('--msg-size', dest='msg_size', type=MessageValidation(MSG_SIZE_LIMIT), default=msg_size,
                         help='The payload size to use in bytes')
     # parser.add_argument('--msg', type=str, dest='msg',
     #                     help='The payload of the publish message')
     parser.add_argument('-S', '--delay', required=False, type=float, default=None,
                         help='number of seconds to sleep between msgs')
     # parser.add_argument('-c', '--clientid', required=False, default=None)
-    parser.add_argument('-u', '--username', required=False, default=None)
+    parser.add_argument('-u', '--username', required=False, default=username)
     # parser.add_argument('-d', '--disable-clean-session', action='store_true',
     #                     help="disable 'clean session' (sub + msgs not cleared when client disconnects)")
-    parser.add_argument('-p', '--password', required=False, default=None)
+    parser.add_argument('-p', '--password', required=False, default=password)
     # parser.add_argument('-k', '--keepalive', required=False, type=int, default=60)
-    parser.add_argument('--pub-timeout', type=int, dest='pub_timeout', default=60,
+    parser.add_argument('--pub-timeout', type=int, dest='pub_timeout', default=pub_timeout,
                         help="The amount of time, in seconds, a publisher "
                              "client will wait to successfully publish it's "
                              "messages. By default this is 60")
-    parser.add_argument('-F', '--cacert', required=False, default=None)
-    parser.add_argument('--description', type=str, default=None,
+    parser.add_argument('-F', '--cacert', required=False, default=cacert)
+    parser.add_argument('--description', type=str, default=description,
                         help='A description of cluster topology. '
                              'Shall be used to set the name of log files of type: '
                              '*description*_*sub_1*')
 
-    parser.add_argument('--json-config', type=str, default=None,
+    parser.add_argument('--json-config', type=str, default=json_config,
                         help='The config json file')
 
     # parser.add_argument('-s', '--use-tls', action='store_true')
@@ -768,153 +775,62 @@ def arg_parse():
     return parser.parse_args()
 
 
-def main():
+class Publishers(multiprocessing.Process):
+    def __init__(self, **kwargs):
+        super(Publishers, self).__init__()
+        self.__pwd = os.getcwd()
+        self.__args = arg_parse(**kwargs)
+        self.__docker_client = docker.from_env()
 
-    # parser = argparse.ArgumentParser()
-    #
-    # parser.add_argument('-H', '--hostname', required=False)
-    # parser.add_argument('-P', '--port', required=False, type=int, default=None,
-    #                     help='Defaults to 8883 for TLS or 1883 for non-TLS')
-    # parser.add_argument('-t', '--topic', required=False, default="test")
-    # parser.add_argument('-T', '--multiple-topics', required=False, default=None, # type=MultipleTopics(parser),
-    #                     help='The structure when clients needs to publish to multiple topics')
-    # parser.add_argument('--pub-clients', type=int, dest='pub_clients', # default=1,
-    #                     help='The number of publisher client workers to use. '
-    #                          'By default 1 are used.')
-    # parser.add_argument('--pub-count', type=int, dest='pub_count', # default=1,
-    #                     help='The number of messages each publisher client '
-    #                          'will publish for completing. The default count '
-    #                          'is 1')
-    # parser.add_argument('-q', '--qos', required=False, type=int, default=0, choices=[0, 1, 2])
-    # # type=func -> useful to check if message size complies with the lower limit
-    # parser.add_argument('--msg-size', dest='msg_size', type=MessageValidation(MSG_SIZE_LIMIT),
-    #                     help='The payload size to use in bytes')
-    # # parser.add_argument('--msg', type=str, dest='msg',
-    # #                     help='The payload of the publish message')
-    # parser.add_argument('-S', '--delay', required=False, type=float, default=None,
-    #                     help='number of seconds to sleep between msgs')
-    # parser.add_argument('--pub-timeout', type=int, dest='pub_timeout', default=60,
-    #                     help="The amount of time, in seconds, a publisher "
-    #                          "client will wait to successfully publish it's "
-    #                          "messages. By default this is 60")
-    # # parser.add_argument('-c', '--clientid', required=False, default=None)
-    # parser.add_argument('-u', '--username', required=False, default=None)
-    # # parser.add_argument('-d', '--disable-clean-session', action='store_true',
-    # #                     help="disable 'clean session' (sub + msgs not cleared when client disconnects)")
-    # parser.add_argument('-p', '--password', required=False, default=None)
-    # # parser.add_argument('-N', '--nummsgs', required=False, type=int, default=1,
-    # #                     help='send this many messages before disconnecting')
-    # # parser.add_argument('-k', '--keepalive', required=False, type=int, default=60)
-    # # parser.add_argument('-s', '--use-tls', action='store_true')
-    # # parser.add_argument('--insecure', action='store_true')
-    # parser.add_argument('-F', '--cacert', required=False, default=None,
-    #                     help='The certificate authority certificate file that '
-    #                          'are treated as trusted by the clients')
-    # # parser.add_argument('--tls-version', required=False, default=None,
-    # #                     help='TLS protocol version, can be one of tlsv1.2 tlsv1.1 or tlsv1\n')
-    # # parser.add_argument('-D', '--debug', action='store_true')
+    def run(self) -> None:
+        # kill the previous created containers
+        kill_containers_with_prefix(self.__docker_client, prefix='pub')
 
-    args = arg_parse()
-    args_str = get_args(args)
-    # print(args_str)
-    pwd = os.getcwd()
+        container_volumes = [self.__pwd + '/clients/container_python.py:/home/script.py']
+        json_config = getattr(self.__args, 'json_config')
+        # string or list
+        containers = []
+        if json_config:
+            containers = create_containers_from_json(json_config, self.__docker_client)
+        else:
+            nr_containers = getattr(self.__args, Keywords.CONTAINERS)
+            topics_json_file = getattr(self.__args, Keywords.MULTIPLE_TOPICS)
+            _args = copy.deepcopy(self.__args)
+            if topics_json_file is not None:
+                destination_json_file = PATH_MULTIPLE_TOPICS
+                _args[Keywords.MULTIPLE_TOPICS] = destination_json_file
+                if Keywords.TOPICS in _args.keys():
+                    del _args[Keywords.TOPICS]
+                container_volumes.append(os.path.abspath(topics_json_file) + ':' + destination_json_file)
 
-    docker_client = docker.from_env()
+            print("Creating new containers")
+            for my_cont in range(nr_containers):
+                container_name = f"{PUB_PREFIX}_{my_cont}"
+                _cont = create_container(self.__docker_client, _args, volumes=container_volumes, name=container_name,
+                                         hostname=container_name)
+                print(f"Container {container_name} created")
+                containers.append(_cont)
 
-    # kill the previous created containers
-    kill_containers_with_prefix(docker_client, prefix='pub')
+        print('Starting containers')
+        time.sleep(2)
+        for container in containers:
+            if container.status == 'created':
+                print(f'Container {container.name} started')
+                print(f'Running python script in container {container.name}')
 
-    container_volumes = []
-    container_volumes.append(pwd + '/clients/container_python.py:/home/script.py')
+        print('Printing containers Logs')
+        for container in containers:
+            _cont_output = container.logs()
+            print(_cont_output.decode("utf-8"))
 
-    # # check if --multiple-topics parameter is given and elaborate it
-    # topics_json_file = getattr(args, 'multiple_topics')
-    # if topics_json_file is not None:
-    #     if topics_json_file.startswith('./'):
-    #         topics_json_file = topics_json_file.replace('./', pwd + '/')
-    #     if not topics_json_file.startswith('/'):
-    #         topics_json_file = pwd + '/' + topics_json_file
-    #     # print(topics_json_file)
-    #     destination_json_file = '/home/multiple-topics.json'
-    #     setattr(args, 'multiple_topics', True)
-    #     container_volumes.append(topics_json_file + ':' + destination_json_file)
-    #
-    # container_2 = docker_client.containers.create('francigjeci/mqtt-py:3.8.2',
-    #                                          detach=True,
-    #                                         # entrypoint= 'echo hello',
-    #                                         working_dir = '/home',
-    #                                         tty=True, # terminal driver, necessary since you are running the python in bash
-    #                                         stdin_open=True,
-    #                                          # stream=True,
-    #                                         volumes=container_volumes, #'/home',
-    #                                         # command=["bash"],
-    #                                         environment={
-    #                                             'CLIENT_HOSTNAME': '172.20.0.5',
-    #                                             'CLIENT_SUBSCRIBERS': 0,
-    #                                             'CLIENT_SUBSCRIBERS_COUNT': 0,
-    #                                             'CLIENT_PUBLISHERS': 5,
-    #                                             'CLIENT_PUBLISHERS_COUNT': 10,
-    #                                             # 'CLIENT_MESSAGE_SIZE': 32,
-    #                                             # 'CLIENT_MESSAGE': 'hello',
-    #                                             'CLIENT_TOPIC': 'test',
-    #                                             'CLIENT_QOS': 0
-    #                                         },
-    #                                          network='pumba_net', # the network this container must be connected
-    #                                          hostname="client2", name='d2'# , ip='172.20.0.72'
-    #                                          )
-    #
-    # container_2.start()
-    # print('Container %s started' % "d2")
-    #
-    # d2_bis = container_2.exec_run("python3 /home/script.py" + args_str) # args_str
-    # print(d2_bis.output.decode("utf-8"))
-    #
-    # time.sleep(5)
-    # container_2.stop()
+        print('Printing containers stats')
+        for container in containers:
+            print(container.stats(stream=False))
 
-    container_volumes = [pwd + '/clients/container_python.py:/home/script.py']
-    json_config = getattr(args, 'json_config')
-    # string or list
-    containers = []
-    if json_config:
-        containers = create_containers_from_json(json_config, docker_client)
-    else:
-        nr_containers = getattr(args, Keywords.CONTAINERS)
-        topics_json_file = getattr(args, Keywords.MULTIPLE_TOPICS)
-        _args = copy.deepcopy(args)
-        if topics_json_file is not None:
-            destination_json_file = PATH_MULTIPLE_TOPICS
-            _args[Keywords.MULTIPLE_TOPICS] = destination_json_file
-            if Keywords.TOPICS in _args.keys():
-                del _args[Keywords.TOPICS]
-            container_volumes.append(os.path.abspath(topics_json_file) + ':' + destination_json_file)
+        print('Stopping and killing the containers')
+        kill_containers_with_prefix(self.__docker_client, PUB_PREFIX)
 
-        print("Creating new containers")
-        for my_cont in range(nr_containers):
-            container_name = f"{PUB_PREFIX}_{my_cont}"
-            _cont = create_container(docker_client, _args, volumes=container_volumes, name=container_name,
-                                     hostname=container_name)
-            print(f"Container {container_name} created")
-            containers.append(_cont)
-
-    print('Starting containers')
-    time.sleep(2)
-    for container in containers:
-        if container.status == 'created':
-            print(f'Container {container.name} started')
-            print(f'Running python script in container {container.name}')
-
-    print('Printing containers Logs')
-    for container in containers:
-        _cont_output = container.logs()
-        print(_cont_output.decode("utf-8"))
-
-    print('Printing containers stats')
-    for container in containers:
-        print(container.stats(stream=False))
-
-    print('Stopping and killing the containers')
-    kill_containers_with_prefix(docker_client, PUB_PREFIX)
 
 if __name__ == '__main__':
-    main()
+    pubs = Publishers()
+    pubs.start()
