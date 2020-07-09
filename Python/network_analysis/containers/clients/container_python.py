@@ -538,8 +538,8 @@ class Sub(MQTTClient):
         print('Timeout: Stopping the client')
         self.client.loop_stop()
         try:
-            print('Timeout: Terminating process')
             self.terminate()
+            print('Timeout: Terminating process')
         except AttributeError:
             pass
 
