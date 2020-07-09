@@ -599,10 +599,11 @@ class Sub(MQTTClient):
             # after we have reached the max count we stop the loop to continue further
             self.__finished = True
 
-            # Stopping the timer
+            # Stoping the timer
             self.__intermsg_timer.cancel()
             print(f'Stopping client {self.client_id} on message')
             self.client.loop_stop()
+            print(f'Client {self.client_id} stoped')
             try:
                 self.terminate()
                 print(f'Terminating process on message in client {self.client_id} ')
