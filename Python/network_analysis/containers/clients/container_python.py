@@ -812,7 +812,7 @@ def write(log, data):
     print(f'The size of the logs {len(data)}')
     with open(log, 'a') as f:
         for ind, chunk in enumerate(data):
-            print(f'Writing the {ind}-th row')
+            # print(f'Writing the {ind}-th row')
             f.write(chunk)
             f.write('\n')
         f.close()
@@ -1119,11 +1119,12 @@ def main(host=None):
     # Get the log from sub
     _ind_log = 0
     print('Pulling the data from the log queue')
+    print(f'Log size is {LOG_QUEUE.qsize()}')
     logs = []
     while not LOG_QUEUE.empty():
         logs.append(LOG_QUEUE.get(timeout=cl_param.sub_timeout))
         _ind_log += 1
-        print(f'Pulling {_ind_log}-th item from log')
+        # print(f'Pulling {_ind_log}-th item from log')
     
     if LOG_QUEUE.empty():
         print('The Log queue is empty')
