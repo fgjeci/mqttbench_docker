@@ -1116,6 +1116,9 @@ def main(host=None):
         logs.append(LOG_QUEUE.get(timeout=cl_param.sub_timeout))
         _ind_log += 1
         print(f'Pulling {_ind_log}-th item from log')
+    
+    if LOG_QUEUE.empty():
+        print('The Log queue is empty')
 
     # logs = []
     # for i in range(nr_msg):
