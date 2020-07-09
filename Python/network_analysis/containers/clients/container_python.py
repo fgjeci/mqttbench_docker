@@ -389,8 +389,11 @@ class MultipleTopics(object):
                   f'than the total number of subscribers reported in the (--multiple-topic {self.__subscribers})')
             exit(1)
         if self.__publishers > self.__pub_clients:
-            print('Error: The number of publisher (--pub-clients) is smaller than the total number of publishers '
-                  'reported in the --multiple-topic file')
+            print(f'The publishers')
+            print(self.__publishers)
+            print(f'Error: The number of publisher (--pub-clients) ({self.__pub_clients}) '
+                  f'is smaller than the total number of publishers ({self.__publishers}) '
+                  f'reported in the --multiple-topic file')
             exit(1)
 
     def exception(self, err=None):
@@ -491,18 +494,20 @@ class MQTTClient(multiprocessing.Process):
 
 
 class Sub(MQTTClient):
-    def __init__(self, *args, intermsg_timeout: int = 60, **kwargs):
+    def __init__(self, *args, intermsg_timeout: int = 120, **kwargs):
         MQTTClient.__init__(self, *args, **kwargs)
         self.__end_time_lock = multiprocessing.Lock()
         self.__finished = False
         self.__intermsg_timeout = intermsg_timeout
-        self.__intermsg_timer = Timer(self.__intermsg_timeout, self._intermessage_timeout)
+        self.__intermsg_timer = Timer(self.__intermsg_timeout * 2, self._intermessage_timeout)
         self.__intermsg_timer.start()
+        self.__received_msgs = 0
         # print(f'The topics in ({self.hostname}, {self.client_id})')
         # check if topic has been given as a strig, which in json is passed in a string format
+        # print(f'Topic: {self.topic}')
         if isinstance(self.topic, str):
             topic_list = self._json_str_to_list(self.topic)
-            if topic_list is not None:
+            if len(topic_list) > 0:
                 self.topic = topic_list
 
     @property
@@ -525,13 +530,25 @@ class Sub(MQTTClient):
         return _json_list_1
 
     def _intermessage_timeout(self):
-        # print('Entered in the intermessage function')
+        # print('Timeout expired; Stopping the client')
         self.__finished = True
+        # self.terminate()
+        # self.client.loop_stop()
+
+        print('Timeout: Stopping the client')
+        self.client.loop_stop()
+        try:
+            print('Timeout: Terminating process')
+            self.terminate()
+        except AttributeError:
+            pass
+
 
     def on_connect(self, client, userdata, flags, rc):
         # Added the condition to connect to passed topic
         if rc == 0:
             print(f'Client {self.client_id} connected to {self.hostname}')
+            print(f'Client {self.client_id} subscribing to topics: {self.topic}')
             if isinstance(self.topic, str):
                 # Single topic
                 client.subscribe(self.topic, qos=self.qos)
@@ -557,8 +574,11 @@ class Sub(MQTTClient):
         if isinstance(_pub_msg_dictt['publish_timestamp'], datetime.datetime):
             _pub_msg_host = _pub_msg_dictt['hostname']
             _pub_msg_pub_id = _pub_msg_dictt['pub_id']
-            print(f'A new message has arrived to ({self.hostname}, {self.client_id}) '
-                  f'from ({_pub_msg_host}, {_pub_msg_pub_id})')
+            self.__received_msgs += 1
+            print(f'New message: Receiver ({self.hostname}, {self.client_id}) & '
+                  f'Sender ({_pub_msg_host}, {_pub_msg_pub_id}) & '
+                  f'Total received: {self.__received_msgs}')
+
             # print('The dict parsing works')
             _msg_e2e_delay = _msg_arrival_time - _pub_msg_dictt['publish_timestamp']
             # Write the result
@@ -577,8 +597,13 @@ class Sub(MQTTClient):
                 self.end_time = datetime.datetime.utcnow()
             self.__end_time_lock.release()
             # after we have reached the max count we stop the loop to continue further
-            self.client.loop_stop()
             self.__finished = True
+
+            print(f'Stopping client {self.client_id} on message')
+            self.client.loop_stop()
+            print(f'Terminating process on message in client {self.client_id} ')
+            self.terminate()
+
 
     def run(self):
         self.client.on_connect = self.on_connect
@@ -776,8 +801,10 @@ def initialize_log(host: str, dest_path: str = 'logs', file_name: str = None, pr
 
 
 def write(log, data):
+    print(f'The size of the logs {len(data)}')
     with open(log, 'a') as f:
-        for chunk in data:
+        for ind, chunk in enumerate(data):
+            print(f'Writing the {ind}-th row')
             f.write(chunk)
             f.write('\n')
         f.close()
@@ -812,6 +839,7 @@ def write_to_log(pub_host: str = None, pub_id: str = None, pub_con_init: datetim
                                 pub_timestamp, pub_qos,
                                 sub_host, sub_id, sub_timestamp,
                                 e2e_delay))
+    print(f'Logs size {LOG_QUEUE.qsize()}')
 
 
 def arg_parse():
@@ -904,8 +932,12 @@ def main(host=None):
         # print('Single topics')
         # ALL Subscribers and publishers shall work on one single topic
         for i in range(cl_param.sub_clients):
+            # set the timeout depending on the number of subs
+            _timeout = cl_param.sub_timeout
+            if cl_param.sub_clients > cl_param.sub_timeout:
+                _timeout = cl_param.sub_clients * 3.5
             sub = Sub(cl_param.hostname, topic=cl_param.topic, port=cl_param.port, client_id='sub' + str(i),
-                      tls=cl_param.tls, auth=cl_param.auth, timeout=cl_param.sub_timeout,
+                      tls=cl_param.tls, auth=cl_param.auth, timeout=_timeout,
                       max_count=cl_param.sub_count, qos=cl_param.qos)
             sub_threads.append(sub)
             sub.start()
@@ -942,9 +974,13 @@ def main(host=None):
             _nr_subs = _cluster[Keywords.SUBS]
             for _sub_ind in range(_nr_subs):
                 _sub_client_id += 1
+                # set the timeout depending on the number of subs
+                _timeout = cl_param.sub_timeout
+                if cl_param.sub_clients > cl_param.sub_timeout:
+                    _timeout = cl_param.sub_clients * 3.5
                 sub = Sub(cl_param.hostname, topic=_topics, port=cl_param.port,
                           client_id='sub' + str(_sub_client_id), tls=cl_param.tls,
-                          auth=cl_param.auth, timeout=cl_param.sub_timeout,
+                          auth=cl_param.auth, timeout=_timeout,
                           max_count=cl_param.sub_count, qos=cl_param.qos)
                 sub_threads.append(sub)
                 sub.start()
@@ -975,9 +1011,13 @@ def main(host=None):
                 pub.start()
 
             for _sub_ind in range(cl_param.sub_clients - _multiple_topics_cl.subscribers):
+                # set the timeout depending on the number of subs
+                _timeout = cl_param.sub_timeout
+                if cl_param.sub_clients > cl_param.sub_timeout:
+                    _timeout = cl_param.sub_clients * 3.5
                 sub = Sub(cl_param.hostname, topic=_default_topic, port=cl_param.port,
                           client_id='sub' + str(_multiple_topics_cl.subscribers + _sub_ind), tls=cl_param.tls,
-                          auth=cl_param.auth, timeout=cl_param.sub_timeout,
+                          auth=cl_param.auth, timeout=_timeout,
                           max_count=cl_param.sub_count, qos=cl_param.qos)
                 sub_threads.append(sub)
                 sub.start()
@@ -993,9 +1033,13 @@ def main(host=None):
                 pub.start()
 
             for _sub_ind in range(cl_param.sub_clients - _multiple_topics_cl.subscribers):
+                # set the timeout depending on the number of subs
+                _timeout = cl_param.sub_timeout
+                if cl_param.sub_clients > cl_param.sub_timeout:
+                    _timeout = cl_param.sub_clients * 3.5
                 sub = Sub(cl_param.hostname, topic=_all, port=cl_param.port,
                           client_id='sub' + str(_multiple_topics_cl.subscribers + _sub_ind), tls=cl_param.tls,
-                          auth=cl_param.auth, timeout=cl_param.sub_timeout,
+                          auth=cl_param.auth, timeout=_timeout,
                           max_count=cl_param.sub_count, qos=cl_param.qos)
                 sub_threads.append(sub)
                 sub.start()
@@ -1063,9 +1107,13 @@ def main(host=None):
     pub_times = numpy.array(pub_times)
 
     # Get the log from sub
+    _ind_log = 0
+    print('Pulling the data from the log queue')
     logs = []
     while not LOG_QUEUE.empty():
         logs.append(LOG_QUEUE.get(timeout=cl_param.sub_timeout))
+        _ind_log += 1
+        print(f'Pulling {_ind_log}-th item from log')
 
     # logs = []
     # for i in range(nr_msg):
