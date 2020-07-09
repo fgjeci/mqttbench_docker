@@ -839,6 +839,8 @@ def write_to_log(pub_host: str = None, pub_id: str = None, pub_con_init: datetim
                                 pub_timestamp, pub_qos,
                                 sub_host, sub_id, sub_timestamp,
                                 e2e_delay))
+    if LOG_QUEUE.full():
+        print('The log queue is full')
     print(f'Logs size {LOG_QUEUE.qsize()}')
 
 
