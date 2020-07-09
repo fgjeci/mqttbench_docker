@@ -499,7 +499,7 @@ class Sub(MQTTClient):
         self.__end_time_lock = multiprocessing.Lock()
         self.__finished = False
         self.__intermsg_timeout = intermsg_timeout
-        self.__intermsg_timer = Timer(self.__intermsg_timeout * 2, self._intermessage_timeout)
+        self.__intermsg_timer = Timer(self.__intermsg_timeout * 2, self.stop_client)
         self.__intermsg_timer.start()
         self.__received_msgs = 0
         # print(f'The topics in ({self.hostname}, {self.client_id})')
@@ -529,17 +529,17 @@ class Sub(MQTTClient):
             _json_list_1 = _json_list_2
         return _json_list_1
 
-    def _intermessage_timeout(self):
+    def stop_client(self):
         # print('Timeout expired; Stopping the client')
         self.__finished = True
         # self.terminate()
         # self.client.loop_stop()
 
-        print('Timeout: Stopping the client')
+        print(f'Stopping the client {self.client_id}')
         self.client.loop_stop()
         try:
             self.terminate()
-            print('Timeout: Terminating process')
+            print(f'Terminating process {self.client_id}')
         except AttributeError:
             pass
 
@@ -563,7 +563,7 @@ class Sub(MQTTClient):
 
     def on_message(self, client, userdata, msg):
         self.__intermsg_timer.cancel()
-        self.__intermsg_timer = Timer(self.__intermsg_timeout, self._intermessage_timeout)
+        self.__intermsg_timer = Timer(self.__intermsg_timeout, self.stop_client)
         self.__intermsg_timer.start()
 
         if self.start_time is None:
@@ -601,16 +601,19 @@ class Sub(MQTTClient):
 
             # Stoping the timer
             self.__intermsg_timer.cancel()
-            print(f'Stopping client {self.client_id} on message')
-            self.client.loop_stop()
-            print(f'Client {self.client_id} stoped')
-            try:
-                print(f'Terminating process {self.client_id}')
-                time.sleep(1)
-                self.terminate()
-                print(f'Process terminatted {self.client_id}')
-            except AttributeError:
-                pass
+            
+            self.stop_client()
+            
+            # print(f'Stopping client {self.client_id} on message')
+            # self.client.loop_stop()
+            # print(f'Client {self.client_id} stoped')
+            # try:
+            #    print(f'Terminating process {self.client_id}')
+            #    time.sleep(1)
+            #    self.terminate()
+            #    print(f'Process terminatted {self.client_id}')
+            #except AttributeError:
+            #    pass
             
 
 
