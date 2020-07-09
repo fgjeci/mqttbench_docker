@@ -606,6 +606,7 @@ class Sub(MQTTClient):
             print(f'Client {self.client_id} stoped')
             try:
                 print(f'Terminating process {self.client_id}')
+                time.sleep(1)
                 self.terminate()
                 print(f'Process terminatted {self.client_id}')
             except AttributeError:
