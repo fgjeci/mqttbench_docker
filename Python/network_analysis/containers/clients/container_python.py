@@ -545,6 +545,7 @@ class Sub(MQTTClient):
             self.terminate()
             print(f'Terminating process {self.client_id}')
         except AttributeError:
+            print(f'No terminate {self.client_id}')
             pass
 
 
