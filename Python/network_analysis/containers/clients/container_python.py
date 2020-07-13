@@ -622,8 +622,8 @@ class Sub(MQTTClient):
             # self.stop_client()
             # self.terminate_client()
             # while True:
-            self.stop_client()
-            self.client.disconnect()
+            # self.stop_client()
+            # self.client.disconnect()
             # time.sleep(3)
             
             self.__end_time_lock.release()
@@ -648,6 +648,8 @@ class Sub(MQTTClient):
                 delta = self.end_time - self.start_time
                 SUB_QUEUE.put(delta.total_seconds())
                 self.client.loop_stop()
+                print(f'Loop stopped {self.client_id}')
+                self.terminate_client()
                 break
             self.__end_time_lock.release()
             if self.start_time:
