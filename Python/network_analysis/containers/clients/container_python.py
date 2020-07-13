@@ -499,8 +499,8 @@ class Sub(MQTTClient):
         self.__end_time_lock = multiprocessing.Lock()
         self.__finished = False
         self.__intermsg_timeout = intermsg_timeout
-        self.__intermsg_timer = Timer(self.__intermsg_timeout * 2, self.finish_client)
-        self.__intermsg_timer.start()
+        # self.__intermsg_timer = Timer(self.__intermsg_timeout * 2, self.finish_client)
+        # self.__intermsg_timer.start()
         self.__received_msgs = 0
         # print(f'The topics in ({self.hostname}, {self.client_id})')
         # check if topic has been given as a strig, which in json is passed in a string format
@@ -541,10 +541,10 @@ class Sub(MQTTClient):
 
         print(f'Stopping the client {self.client_id}')
         self.client.loop_stop()
-        self.__intermsg_timer.cancel()
+        # self.__intermsg_timer.cancel()
         
     def terminate_client(self):
-        self.__intermsg_timer.cancel()
+        # self.__intermsg_timer.cancel()
         try:
             self.terminate()
             print(f'Terminating process {self.client_id}')
@@ -570,9 +570,9 @@ class Sub(MQTTClient):
         # print("Subscribed: " + str(mid) + " " + str(granted_qos))
 
     def on_message(self, client, userdata, msg):
-        self.__intermsg_timer.cancel()
-        self.__intermsg_timer = Timer(self.__intermsg_timeout, self.stop_client)
-        self.__intermsg_timer.start()
+        # self.__intermsg_timer.cancel()
+        # self.__intermsg_timer = Timer(self.__intermsg_timeout, self.stop_client)
+        # self.__intermsg_timer.start()
 
         if self.start_time is None:
             self.start_time = datetime.datetime.utcnow()
@@ -608,7 +608,7 @@ class Sub(MQTTClient):
             self.__finished = True
 
             # Stoping the timer
-            self.__intermsg_timer.cancel()
+            # self.__intermsg_timer.cancel()
             
             self.stop_client()
             # self.stop_client()
