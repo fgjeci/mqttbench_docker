@@ -537,6 +537,10 @@ class Sub(MQTTClient):
 
         print(f'Stopping the client {self.client_id}')
         self.client.loop_stop()
+        self.__intermsg_timer.cancel()
+        
+    def terminate_client(self):
+        self.__intermsg_timer.cancel()
         try:
             self.terminate()
             print(f'Terminating process {self.client_id}')
