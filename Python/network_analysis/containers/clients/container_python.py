@@ -569,7 +569,9 @@ class Sub(MQTTClient):
         print('Client disconnected')
         if self.is_alive():
             # self.terminate_client()
+            print(f'Closing client {self.client_id}')
             self.close()
+            print(f'Closed client {self.client_id}')
 
     def on_subscribe(self, client, obj, mid, granted_qos):
         print(f'Client {self.client_id} subscribed to {self.hostname} with granted qos: {granted_qos}')
