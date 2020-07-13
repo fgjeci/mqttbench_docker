@@ -495,7 +495,7 @@ class MQTTClient(multiprocessing.Process):
 
 class Sub(MQTTClient):
     def __init__(self, *args, intermsg_timeout: int = 120, **kwargs):
-        MQTTClient.__init__(self, *args, **kwargs)
+        super(MQTTClient, self).__init__(*args, **kwargs)
         self.__end_time_lock = multiprocessing.Lock()
         self.__finished = False
         self.__intermsg_timeout = intermsg_timeout
@@ -541,6 +541,7 @@ class Sub(MQTTClient):
 
         print(f'Stopping the client {self.client_id}')
         self.client.loop_stop()
+        print(f'Stopped the client {self.client_id}')
         # self.__intermsg_timer.cancel()
         
     def terminate_client(self):
@@ -605,13 +606,13 @@ class Sub(MQTTClient):
                          sub_host=self.hostname, sub_id=self.client_id, sub_timestamp=_msg_arrival_time,
                          e2e_delay=_msg_e2e_delay)
 
+        self.__end_time_lock.acquire()
         self.msg_count += 1
         if self.msg_count >= self.max_count:
             # print('We hve entered in the final part ')
-            self.__end_time_lock.acquire()
             if self.end_time is None:
                 self.end_time = datetime.datetime.utcnow()
-            self.__end_time_lock.release()
+            
             # after we have reached the max count we stop the loop to continue further
             self.__finished = True
 
@@ -639,7 +640,7 @@ class Sub(MQTTClient):
             #except AttributeError:
             #    pass
             
-
+        self.__end_time_lock.release()
 
     def run(self):
         self.client.on_connect = self.on_connect
