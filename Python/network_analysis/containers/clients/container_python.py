@@ -564,6 +564,9 @@ class Sub(MQTTClient):
                 # Multiple topics
                 for _topic in set(self.topic):
                     client.subscribe(_topic, qos=self.qos)
+    
+    def on_disconnect(self, client, userdata, rc):
+        self.terminate_client()
 
     def on_subscribe(self, client, obj, mid, granted_qos):
         print(f'Client {self.client_id} subscribed to {self.hostname} with granted qos: {granted_qos}')
@@ -613,10 +616,10 @@ class Sub(MQTTClient):
             # self.stop_client()
             # self.stop_client()
             # self.terminate_client()
-            while True:
-                self.stop_client()
-                self.terminate_client()
-                time.sleep(3)
+            # while True:
+            self.stop_client()
+            self.client.disconnect()
+            # time.sleep(3)
             
             
             
@@ -637,6 +640,7 @@ class Sub(MQTTClient):
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.on_subscribe = self.on_subscribe
+        self.client.on_disconnect = self.on_disconnect
         if self.tls:
             self.client.tls_set(**self.tls)
         if self.auth:
