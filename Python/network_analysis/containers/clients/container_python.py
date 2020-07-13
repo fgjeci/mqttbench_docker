@@ -603,21 +603,22 @@ class Sub(MQTTClient):
             self.__end_time_lock.acquire()
             if self.end_time is None:
                 self.end_time = datetime.datetime.utcnow()
-            
+            self.__end_time_lock.release()
             # after we have reached the max count we stop the loop to continue further
             self.__finished = True
 
             # Stoping the timer
             # self.__intermsg_timer.cancel()
             
-            self.stop_client()
+            # self.stop_client()
             # self.stop_client()
             # self.terminate_client()
             while True:
+                self.stop_client()
                 self.terminate_client()
-                time.sleep(1)
+                time.sleep(3)
             
-            self.__end_time_lock.release()
+            
             
             # print(f'Stopping client {self.client_id} on message')
             # self.client.loop_stop()
