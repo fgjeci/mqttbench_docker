@@ -570,7 +570,7 @@ class Sub(MQTTClient):
         if self.is_alive():
             # self.terminate_client()
             print(f'Closing client {self.client_id}')
-            self.close()
+            self.join(10)
             print(f'Closed client {self.client_id}')
 
     def on_subscribe(self, client, obj, mid, granted_qos):
