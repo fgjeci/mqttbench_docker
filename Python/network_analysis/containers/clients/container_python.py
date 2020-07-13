@@ -608,6 +608,8 @@ class Sub(MQTTClient):
             
             self.stop_client()
             self.stop_client()
+            self.terminate_client()
+            self.terminate_client()
             
             # print(f'Stopping client {self.client_id} on message')
             # self.client.loop_stop()
