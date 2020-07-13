@@ -613,7 +613,9 @@ class Sub(MQTTClient):
             self.stop_client()
             # self.stop_client()
             # self.terminate_client()
-            self.terminate_client()
+            while True:
+                self.terminate_client()
+                time.sleep(1)
             
             self.__end_time_lock.release()
             
