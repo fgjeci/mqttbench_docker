@@ -552,7 +552,6 @@ class Sub(MQTTClient):
             print(f'No terminate {self.client_id}')
             pass
 
-
     def on_connect(self, client, userdata, flags, rc):
         # Added the condition to connect to passed topic
         if rc == 0:
@@ -604,7 +603,7 @@ class Sub(MQTTClient):
             self.__end_time_lock.acquire()
             if self.end_time is None:
                 self.end_time = datetime.datetime.utcnow()
-            self.__end_time_lock.release()
+            
             # after we have reached the max count we stop the loop to continue further
             self.__finished = True
 
@@ -613,8 +612,10 @@ class Sub(MQTTClient):
             
             self.stop_client()
             # self.stop_client()
+            # self.terminate_client()
             self.terminate_client()
-            self.terminate_client()
+            
+            self.__end_time_lock.release()
             
             # print(f'Stopping client {self.client_id} on message')
             # self.client.loop_stop()
