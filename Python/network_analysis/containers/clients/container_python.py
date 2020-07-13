@@ -603,6 +603,7 @@ class Sub(MQTTClient):
             self.__intermsg_timer.cancel()
             
             self.stop_client()
+            self.stop_client()
             
             # print(f'Stopping client {self.client_id} on message')
             # self.client.loop_stop()
