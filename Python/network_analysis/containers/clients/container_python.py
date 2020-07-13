@@ -655,6 +655,7 @@ class Sub(MQTTClient):
         while True:
             # Time sleep is no useful when we have messages coming in bursts
             time.sleep(1)
+            print(f'Loop {self.client_id}')
             self.__end_time_lock.acquire()
             if self.end_time:
                 delta = self.end_time - self.start_time
