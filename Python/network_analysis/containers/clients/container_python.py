@@ -566,6 +566,7 @@ class Sub(MQTTClient):
                     client.subscribe(_topic, qos=self.qos)
     
     def on_disconnect(self, client, userdata, rc):
+        print('Client disconnected')
         self.terminate_client()
 
     def on_subscribe(self, client, obj, mid, granted_qos):
