@@ -607,7 +607,7 @@ class Sub(MQTTClient):
             self.__intermsg_timer.cancel()
             
             self.stop_client()
-            self.stop_client()
+            # self.stop_client()
             self.terminate_client()
             self.terminate_client()
             
