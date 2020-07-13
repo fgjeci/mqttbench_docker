@@ -606,10 +606,10 @@ class Sub(MQTTClient):
                          sub_host=self.hostname, sub_id=self.client_id, sub_timestamp=_msg_arrival_time,
                          e2e_delay=_msg_e2e_delay)
 
-        self.__end_time_lock.acquire()
         self.msg_count += 1
         if self.msg_count >= self.max_count:
             # print('We hve entered in the final part ')
+            self.__end_time_lock.acquire()
             if self.end_time is None:
                 self.end_time = datetime.datetime.utcnow()
             
@@ -620,27 +620,13 @@ class Sub(MQTTClient):
             # self.__intermsg_timer.cancel()
             
             # self.stop_client()
-            # self.stop_client()
             # self.terminate_client()
             # while True:
             self.stop_client()
             self.client.disconnect()
             # time.sleep(3)
             
-            
-            
-            # print(f'Stopping client {self.client_id} on message')
-            # self.client.loop_stop()
-            # print(f'Client {self.client_id} stoped')
-            # try:
-            #    print(f'Terminating process {self.client_id}')
-            #    time.sleep(1)
-            #    self.terminate()
-            #    print(f'Process terminatted {self.client_id}')
-            #except AttributeError:
-            #    pass
-            
-        self.__end_time_lock.release()
+            self.__end_time_lock.release()
 
     def run(self):
         self.client.on_connect = self.on_connect
