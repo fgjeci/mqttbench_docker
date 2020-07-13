@@ -499,7 +499,7 @@ class Sub(MQTTClient):
         self.__end_time_lock = multiprocessing.Lock()
         self.__finished = False
         self.__intermsg_timeout = intermsg_timeout
-        self.__intermsg_timer = Timer(self.__intermsg_timeout * 2, self.stop_client)
+        self.__intermsg_timer = Timer(self.__intermsg_timeout * 2, self.finish_client)
         self.__intermsg_timer.start()
         self.__received_msgs = 0
         # print(f'The topics in ({self.hostname}, {self.client_id})')
@@ -528,6 +528,10 @@ class Sub(MQTTClient):
         else:
             _json_list_1 = _json_list_2
         return _json_list_1
+    
+    def finish_client(self):
+        self.stop_client()
+        self.terminate_client()
 
     def stop_client(self):
         # print('Timeout expired; Stopping the client')
