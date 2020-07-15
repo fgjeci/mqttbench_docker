@@ -619,14 +619,14 @@ class Sub(MQTTClient):
             # Stoping the timer
             # self.__intermsg_timer.cancel()
             
-            # self.stop_client()
-            # self.terminate_client()
             # while True:
             # self.stop_client()
             # self.client.disconnect()
             # time.sleep(3)
             
             self.__end_time_lock.release()
+            self.stop_client()
+            # self.terminate_client()
 
     def run(self):
         self.client.on_connect = self.on_connect
