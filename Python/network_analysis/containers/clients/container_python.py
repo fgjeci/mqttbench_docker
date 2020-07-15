@@ -495,7 +495,7 @@ class MQTTClient(multiprocessing.Process):
 
 class Sub(MQTTClient):
     def __init__(self, *args, intermsg_timeout: int = 120, **kwargs):
-        super(MQTTClient, self).__init__(*args, **kwargs)
+        MQTTClient.__init__(self, *args, **kwargs)
         self.__end_time_lock = multiprocessing.Lock()
         self.__finished = False
         self.__intermsg_timeout = intermsg_timeout
